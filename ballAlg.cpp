@@ -6,6 +6,14 @@
 #include "vectors.h"
 #include "gen_points.c"
 
+typedef struct _node {
+    int id;
+    double radius;
+    double* point;
+    struct _node* left;
+    struct _node* right;
+} node_t;
+
 // core functions
 int build_tree(double** pts, int len);
 void dump_tree(int tree);
@@ -44,7 +52,7 @@ int build_tree(double** points, int len) {
     return 0;
 }
 
-// to the stdout!
+
 void dump_tree(int tree) {}
 
 
