@@ -26,10 +26,15 @@ void vec_sum(int dim, double* a, double* b, double* c) {
 
 void vec_scalar_prod(int dim, double* a, double scalar, double* c) {
     for(int i = 0; i < dim; i++) {
-        c[i] = scalar*a[i]
+        c[i] = scalar*a[i];
     }
 }
 
+void vec_copy(int dim, double* src, double* dst) {
+    for(int i = 0; i < dim; i++) {
+        dst[i] = src[i];
+    }
+}
 
 /*
  * returns the the orhogonal projection of p on line ab
