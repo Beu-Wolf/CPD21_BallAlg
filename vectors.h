@@ -18,19 +18,37 @@ void vec_sub(int dim, double* a, double* b, double* c) {
     }
 }
 
+void vec_sum(int dim, double* a, double* b, double* c) {
+    for(int i = 0; i < dim; i++) {
+        c[i] = a[i]+b[i];
+    }
+}
+
+void vec_scalar_prod(int dim, double* a, double scalar, double* c) {
+    for(int i = 0; i < dim; i++) {
+        c[i] = scalar*a[i]
+    }
+}
+
 
 /*
- * returns the firt coordinate of 
- * the orhogonal projection of p on line ab
+ * returns the the orhogonal projection of p on line ab
  *      po = a + [(p−a)·(b−a) / (b−a)·(b−a) ]*(b−a)
  */
-double orth_proj_marosca(int dim, double* p, double* a, double* b) {
+void orth_proj(int dim, double* p, double* a, double* b, double* ret) {
     double bma[dim];
     double pma[dim];
     vec_sub(dim, b, a, bma);
     vec_sub(dim, p, a, pma);
 
-    return a[0] + (b[0] - a[0])*(dot_prod(dim, pma, bma)/dot_prod(dim, bma, bma));
+     // [(p−a)·(b−a) / (b−a)·(b−a) ]
+    double scalar = (dot_prod(dim, pma, bma)/dot_prod(dim, bma, bma));
+
+    // scalar * (b-a)
+    vec_scalar_prod(dim, bma, scalar, bma);
+
+    // scalar*(b-a) + a
+    vec_sum(dim, a, bma, ret);
 }
 
 
