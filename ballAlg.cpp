@@ -46,7 +46,7 @@ int main(int argc, char*argv[]){
     }
 
     // allocate tree
-    // TODO: we may overflow malloc argumtn. Check that with teachers
+    // TODO: we may overflow malloc argument. Check that with teachers
     node_t* tree = (node_t*)malloc(sizeof(node_t) * 2*n_points-1);
     double* centers = (double*)malloc(sizeof(double) * (2*n_points - 1) * N_DIMS);
     if(!tree) {
