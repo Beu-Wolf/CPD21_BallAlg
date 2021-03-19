@@ -188,9 +188,9 @@ void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx) {
 }
 
 void dump_tree(node_t* tree, double** centers, long len) {
-    printf("%d %d\n", N_DIMS, len);
+    printf("%d %ld\n", N_DIMS, len);
     for(int i = 0; i < len; i++) {
-        printf("%d %d %d %.6f",
+        printf("%ld %ld %ld %.6f",
             i, tree[i].left, tree[i].right,
             sqrt(tree[i].radius));
         for(int j = 0; j < N_DIMS; j++) {
