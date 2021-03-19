@@ -152,7 +152,6 @@ void find_furthest_points(sop_t* wset, long n_points, long* a, long* b) {
         *b = wset[1].point_idx;
         return;
     }
-    
 
     // find A: the most distant point from the first point in the set
     long local_a = 0;
@@ -167,9 +166,9 @@ void find_furthest_points(sop_t* wset, long n_points, long* a, long* b) {
     }
 
     // find B: the most distant point from a
-    max = 0;
+    max = 0.0;
     for(int i = 0; i < n_points; i++) {
-        double sd = squared_dist(N_DIMS, POINTS[wset[local_a].point_idx], POINTS[wset[i].point_idx]);
+        double sd = squared_dist(N_DIMS, POINTS[local_a], POINTS[wset[i].point_idx]);
         if(sd > max) {
             local_b = wset[i].point_idx;
             max = sd;

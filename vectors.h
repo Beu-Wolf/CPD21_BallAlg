@@ -72,7 +72,7 @@ double semi_orth_proj(int dim, double* p, double* a, double* b) {
  * returns the square of the distance between a and b
  */
 double squared_dist(int dim, double* a, double* b) {
-    double square_sum = 0;
+    double square_sum = 0.0;
     for(int i = 0; i < dim; i++) {
         double diff = a[i] - b[i];
         square_sum += diff*diff;
