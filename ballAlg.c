@@ -202,9 +202,9 @@ void dump_tree(node_t* tree, double** centers, long len) {
 
 
 void print_point(double* point, int dims) {
-    printf("[point]: (");
+    fprintf(stderr, "[point]: (");
     for(int i = 0; i < dims-1; i++) {
-        printf("%f, ", point[i]);
+        fprintf(stderr, "%f, ", point[i]);
     }
-    printf("%f)\n", point[dims-1]);
+    fprintf(stderr, "%f)\n", point[dims-1]);
 }
