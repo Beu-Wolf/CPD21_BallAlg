@@ -83,8 +83,22 @@ int cmp_item(const void* _a, const void* _b) {
     return 0;
 }
 
+void insertion_sort(item_t* vec, int len) {
+    int i, j;
+    for (i = 1; i < len; i++) {
+        item_t eli = vec[i];
+        j = i-1;
+        while(j >= 0 && eli.sop < vec[j].sop) {
+            vec[j+1] = vec[j];
+            j--;
+        }
+        vec[j+1] = eli;
+    }
+}
+
 item_t nlogn_median(item_t* vec, int len) {
-    qsort(vec, len, sizeof(item_t), cmp_item);
+    // qsort(vec, len, sizeof(item_t), cmp_item);
+    insertion_sort(vec, len);
     item_t res;
     res.sop = (vec[len/2].sop + vec[(len-1)/2].sop)/2;
     return res;
