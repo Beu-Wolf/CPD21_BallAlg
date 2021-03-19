@@ -13,13 +13,13 @@ typedef struct _node {
     int id;
     double radius;
     double* center;
-    int left;
-    int right;
+    long left;
+    long right;
 } node_t;
 
 
 // core functions
-void build_tree(int n_points, sop_t* wset, int id, node_t* tree, double** centers);
+void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
 void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx);
 void find_furthest_points(sop_t* wset, long n_points, long* a, long* b);
 void dump_tree(node_t* tree, double** centers, long len);
@@ -62,7 +62,7 @@ int main(int argc, char*argv[]){
     return 0;
 }
 
-void build_tree(int n_points, sop_t* wset, int id, node_t* tree, double** centers) {
+void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers) {
 
     if(n_points == 1) {
         // create leaf node
