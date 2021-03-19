@@ -34,7 +34,7 @@ int main(int argc, char*argv[]){
     double exec_time = -omp_get_wtime();
     POINTS = get_points(argc, argv, &N_DIMS, &n_points);
 
-    sop_t wset[n_points];
+    sop_t* wset = (sop_t*)malloc(sizeof(sop_t) * n_points);
     for(long i = 0; i < n_points; i++) {
         wset[i].point_idx = i;
     }
