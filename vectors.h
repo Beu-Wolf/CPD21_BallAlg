@@ -24,7 +24,7 @@ void vec_sum(int dim, double* a, double* b, double* c) {
     }
 }
 
-void vec_scalar_prod(int dim, double* a, double scalar, double* c) {
+void vec_scalar_mul(int dim, double* a, double scalar, double* c) {
     for(int i = 0; i < dim; i++) {
         c[i] = scalar*a[i];
     }
@@ -50,12 +50,23 @@ void orth_proj(int dim, double* p, double* a, double* b, double* ret) {
     double scalar = (dot_prod(dim, pma, bma)/dot_prod(dim, bma, bma));
 
     // scalar * (b-a)
-    vec_scalar_prod(dim, bma, scalar, bma);
+    vec_scalar_mul(dim, bma, scalar, bma);
 
     // scalar*(b-a) + a
     vec_sum(dim, a, bma, ret);
 }
 
+double semi_orth_proj(int dim, double* p, double* a, double* b) {
+    double bma[dim];
+    double pma[dim];
+    vec_sub(dim, b, a, bma);
+    vec_sub(dim, p, a, pma);
+
+     // [(p−a)·(b−a) / (b−a)·(b−a) ]
+    double scalar = (dot_prod(dim, pma, bma)/dot_prod(dim, bma, bma));
+
+    return a[0] + (scalar * (b[0] - a[0]));
+}
 
 /*
  * returns the square of the distance between a and b

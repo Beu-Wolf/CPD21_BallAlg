@@ -42,3 +42,52 @@ int main() {
 
     return 0;
 }
+
+/*
+void test_median(int np, int seed) {
+    item_t* vec;
+    
+    vec = gen_points(np, seed);
+    // print_vec(vec, np);
+    item_t m = median(vec, np);
+    item_t correct = nlogn_median(vec, np);
+    assert(m.sop == correct.sop);
+    free(vec);
+}
+
+void test_select_ith(int np, int seed) {
+    item_t* vec;
+    
+    vec = gen_points(np, seed);
+    print_vec(vec, np);
+    item_t ith = select_ith(vec, np, (np-1)/2);
+    printf("SUCCESS! Got %f\n", ith.sop);
+    free(vec);
+}
+
+void test_partition(int np, int seed) {
+    // generating new array, to have array values
+    item_t* vec = gen_points(np, seed);
+
+    printf("Using vec:\n");
+    print_vec(vec, np);
+    print_separator();
+    
+    // test_part_aux(np, seed, 5.0);
+    // test_part_aux(np, seed, -1);
+    // test_part_aux(np, seed, RANGE+1);
+    for(int i = 0; i < np; i++) {
+        // test_part_aux(np, seed, vec[i]);
+    }
+}
+void test_part_aux(int np, int seed, item_t ref) {
+    item_t* vec;
+    int i;
+    vec = gen_points(np, seed);
+    i = partition(vec, np, ref);
+    printf("Partitioning with %f => %d\n", ref, i);
+    print_vec(vec, np);
+    print_separator();
+    free(vec);
+}
+*/
