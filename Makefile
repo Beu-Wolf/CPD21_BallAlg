@@ -1,5 +1,8 @@
-all: ballAlg.c gen_points.c
-	gcc -lm -O3 ballAlg.c -fopenmp -o ballAlg
+all: ballAlg-omp.c gen_points.c
+	gcc -O3 ballAlg-omp.c -fopenmp -o ballAlg-omp -lm
+
+serial: ballAlg.c gen_points.c
+	gcc -O3 ballAlg.c -fopenmp -o ballAlg-serial -lm
 
 profile: ballAlg.c gen_points.c
 	gcc -lm -O3 -pg ballAlg.c -fopenmp -o ballAlg
@@ -15,4 +18,4 @@ test: test.c vectors.h
 
 .PHONY: clean
 clean:
-	rm -f ballAlg test ballQuery
+	rm -f ballAlg-serial test ballQuery ballAlg-omp
