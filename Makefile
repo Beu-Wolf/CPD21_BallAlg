@@ -1,21 +1,26 @@
+FLAGS=-fopenmp -lm
+OPT=-O3
+
+
 all: ballAlg-omp.c gen_points.c
-	gcc -O3 ballAlg-omp.c -fopenmp -o ballAlg-omp -lm
+	gcc ${FLAGS} ${OPT} ballAlg-omp.c -o ballAlg-omp
 
 serial: ballAlg.c gen_points.c
-	gcc -O3 ballAlg.c -fopenmp -o ballAlg-serial -lm
+	gcc ${FLAGS} ${OPT} ballAlg.c -o ballAlg-serial
 
 profile: ballAlg.c gen_points.c
-	gcc -lm -O3 -pg ballAlg.c -fopenmp -o ballAlg
+	gcc ${FLAGS} ${OPT} -pg ballAlg.c     -o ballAlg
+	gcc ${FLAGS} ${OPT} -pg ballAlg-omp.c -o ballAlg-omp
 
 debug: ballAlg.c gen_points.c
-	gcc -lstdc++ -lm -g ballAlg.c -fopenmp -o ballAlg
+	gcc ${FLAGS} -g ballAlg.c     -o ballAlg-serial
+	gcc ${FLAGS} -g ballAlg-omp.c -o ballAlg-omp
+
 
 query: ballQuery.c
 	gcc -O3 -lm ballQuery.c -o ballQuery
 
-test: test.c vectors.h
-	gcc test.c -o test
 
-.PHONY: clean
+.PHONY: clean-serial
 clean:
-	rm -f ballAlg-serial test ballQuery ballAlg-omp
+	rm -f ballAlg-serial ballQuery ballAlg-omp
