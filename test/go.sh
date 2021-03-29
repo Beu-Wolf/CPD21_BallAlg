@@ -65,6 +65,7 @@ done
 
 echo "Running tests... (${N_ITER} iterations each)"
 echo -e "#dims\t\t#points\t\tseed\t\ttime (s)"
+tmp_out="tmp.txt"
 for arg in "${tests[@]}"; do
     split=($arg)
     dim=${split[0]}
@@ -76,9 +77,8 @@ for arg in "${tests[@]}"; do
     echo -ne "${dim}\t\t${num_points}\t\t${seed}\t\t"
     sum=0
     for i in $(seq 1 ${N_ITER}); do
-        tmp=$(mktemp)
-        time="$(./ballAlg-omp ${arg} 2>&1> ${tmp})"
-        diff -q ${tmp} ${out} > /dev/null
+        time="$(./ballAlg-omp ${arg} 2>&1> ${tmp_out})"
+        diff -q ${tmp_out} ${out} > /dev/null
         if [[ ! $? -eq 0 ]]; then
             echo "[ERROR] Unexpected output from test [${arg}]"
             exit
@@ -88,3 +88,4 @@ for arg in "${tests[@]}"; do
     avg=$(bc -l <<<"${sum}/${N_ITER}")
     echo ${avg}
 done
+rm ${tmp_out}
