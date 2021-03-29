@@ -116,14 +116,17 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
             mdn_sop = lm.sop;
         } else {
             // calculate averages
-            double lm_op[N_DIMS];
-            double um_op[N_DIMS];
+            double* lm_op = (double*) malloc(sizeof(double) * N_DIMS);
+            double* um_op = (double*) malloc(sizeof(double) * N_DIMS);
+            if(!lm_op || !um_op) exit(-1);
             orth_proj(N_DIMS, POINTS[lm.point_idx], POINTS[a_idx], POINTS[b_idx], lm_op);
             orth_proj(N_DIMS, POINTS[um.point_idx], POINTS[a_idx], POINTS[b_idx], um_op);
 
             vec_sum(N_DIMS, lm_op, um_op, centers[id]);
             vec_scalar_mul(N_DIMS, centers[id], 0.5, centers[id]);
             mdn_sop = lm.sop + um.sop;
+            free(lm_op);
+            free(um_op);
         }
     }
 

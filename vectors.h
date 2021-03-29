@@ -41,8 +41,9 @@ void vec_copy(int dim, double* src, double* dst) {
  *      po = a + [(p−a)·(b−a) / (b−a)·(b−a) ]*(b−a)
  */
 void orth_proj(int dim, double* p, double* a, double* b, double* ret) {
-    double bma[dim];
-    double pma[dim];
+    double* bma = (double*) malloc(sizeof(double) * dim);
+    double* pma = (double*) malloc(sizeof(double) * dim);
+    if(!bma || !pma) exit(-1);
     vec_sub(dim, b, a, bma);
     vec_sub(dim, p, a, pma);
 
@@ -54,16 +55,22 @@ void orth_proj(int dim, double* p, double* a, double* b, double* ret) {
 
     // scalar*(b-a) + a
     vec_sum(dim, a, bma, ret);
+    free(bma);
+    free(pma);
 }
 
 double semi_orth_proj(int dim, double* p, double* a, double* b) {
-    double bma[dim];
-    double pma[dim];
+    double* bma = (double*) malloc(sizeof(double) * dim);
+    double* pma = (double*) malloc(sizeof(double) * dim);
+    if(!bma || !pma) exit(-1);
     vec_sub(dim, b, a, bma);
     vec_sub(dim, p, a, pma);
 
      // [(p−a)·(b−a) / (b−a)·(b−a) ]
     double scalar = (dot_prod(dim, pma, bma)/dot_prod(dim, bma, bma));
+
+    free(bma);
+    free(pma);
 
     return a[0] + (scalar * (b[0] - a[0]));
 }
