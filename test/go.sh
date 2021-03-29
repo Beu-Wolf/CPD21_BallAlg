@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
-# Usage: ./test/go.sh
+# Usage: ./test/go.sh <serial>
+# if "serial" given, test serial version
 
 N_ITER=1
 tests=(
@@ -36,14 +37,21 @@ tests=(
     "5000000 10 0"
 )
 
+if [[ $# -eq 1 && $1 == "serial" ]]; then
+    serial=1
+fi
+
 make serial
 if [[ $? -eq 2 ]]; then
     exit
 fi
 
-make
-if [[ $? -eq 2 ]]; then
-    exit
+# if running serial no need to compile parallel version
+if [[ ! ${serial} ]]; then
+    make
+    if [[ $? -eq 2 ]]; then
+        exit
+    fi
 fi
 
 
@@ -59,9 +67,9 @@ for arg in "${tests[@]}"; do
         echo "Generating output for ${arg}"
         ./ballAlg-serial ${arg} > ${out} 2> /dev/null
     fi
-
 done
 
+[[ $serial ]] && bin="ballAlg-serial" || bin="ballAlg-omp"
 
 echo "Running tests... (${N_ITER} iterations each)"
 echo -e "#dims\t\t#points\t\tseed\t\ttime (s)"
@@ -77,7 +85,7 @@ for arg in "${tests[@]}"; do
     echo -ne "${dim}\t\t${num_points}\t\t${seed}\t\t"
     sum=0
     for i in $(seq 1 ${N_ITER}); do
-        time="$(./ballAlg-omp ${arg} 2>&1> ${tmp_out})"
+        time="$(./${bin} ${arg} 2>&1> ${tmp_out})"
         diff -q ${tmp_out} ${out} > /dev/null
         if [[ ! $? -eq 0 ]]; then
             echo "[ERROR] Unexpected output from test [${arg}]"
