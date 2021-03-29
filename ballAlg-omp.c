@@ -48,21 +48,15 @@ int main(int argc, char*argv[]){
         printf("Allocation error\n");
         exit(4);
     }
-    #pragma omp parallel 
     {
-        #pragma omp for
         for(long i = 0; i < n_points; i++) {
             wset[i].point_idx = i;
         }
-        #pragma omp for
         for(int i = 0; i < n_nodes; i++) {
             centers[i] = &_centers[i*N_DIMS];
         }
 
-        #pragma omp master
-        {
-            build_tree(n_points, wset, 0, tree, centers);
-        }
+        build_tree(n_points, wset, 0, tree, centers);
     }
     
     exec_time += omp_get_wtime();
@@ -135,7 +129,6 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
 
     double sq_radius = 0.0;
     double* center = centers[id];
-    #pragma omp taskloop shared(wset, center) reduction(max:sq_radius)
     for(int i = 0; i < n_points; i++) {
         double new_rad = squared_dist(N_DIMS, center, POINTS[wset[i].point_idx]);
         if(sq_radius < new_rad) sq_radius = new_rad;
@@ -159,10 +152,8 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
         build_tree(n_right, wset + n_left, node->right, tree, centers);
     } else {
         // left partition
-        #pragma omp task untied
         build_tree(n_left, wset, node->left, tree, centers);
 
-        #pragma omp task untied
         // right partition
         build_tree(n_right, wset + n_left, node->right, tree, centers);
     }
@@ -198,10 +189,7 @@ void find_furthest_points(sop_t* wset, long n_points, long* a, long* b) {
     max_struct_t priv;
     priv.index = 0;
     priv.max=0.0;
-    #pragma omp declare reduction(test:max_struct_t:omp_out=max_with_index(omp_out, omp_in)) initializer(omp_priv={0.0, 0})
 
-
-    #pragma omp taskloop shared(wset) reduction(test:priv) 
     for(int i = 1; i < n_points; i++) {
         max_struct_t t;
         t.max = squared_dist(N_DIMS, POINTS[wset[0].point_idx], POINTS[wset[i].point_idx]);
@@ -217,7 +205,6 @@ void find_furthest_points(sop_t* wset, long n_points, long* a, long* b) {
     priv.index = 0;
     priv.max=0.0;
 
-    #pragma omp taskloop shared(wset) reduction(test:priv) 
     for(int i = 0; i < n_points; i++) {
         max_struct_t t;
         t.max = squared_dist(N_DIMS, POINTS[local_a], POINTS[wset[i].point_idx]);
@@ -236,7 +223,6 @@ void find_furthest_points(sop_t* wset, long n_points, long* a, long* b) {
 void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx) {
     double* a = POINTS[a_idx];
     double* b = POINTS[b_idx];
-    #pragma omp taskloop
     for(int i = 0; i < n_points; i++) {
         wset[i].sop = semi_orth_proj(N_DIMS, POINTS[wset[i].point_idx], a, b);
     }
