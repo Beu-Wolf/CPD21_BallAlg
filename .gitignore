@@ -1,2 +1,4 @@
 tests
-ballAlg
+ballAlg-serial
+ballAlg-omp
+*.out
