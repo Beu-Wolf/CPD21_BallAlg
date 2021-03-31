@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 # Usage: ./test/go.sh <serial>
 # if "serial" given, test serial version
