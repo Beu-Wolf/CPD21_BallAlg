@@ -48,16 +48,15 @@ int main(int argc, char*argv[]){
         printf("Allocation error\n");
         exit(4);
     }
-    {
-        for(long i = 0; i < n_points; i++) {
-            wset[i].point_idx = i;
-        }
-        for(int i = 0; i < n_nodes; i++) {
-            centers[i] = &_centers[i*N_DIMS];
-        }
 
-        build_tree(n_points, wset, 0, tree, centers);
+    for(long i = 0; i < n_points; i++) {
+        wset[i].point_idx = i;
     }
+    for(int i = 0; i < n_nodes; i++) {
+        centers[i] = &_centers[i*N_DIMS];
+    }
+
+    build_tree(n_points, wset, 0, tree, centers);
     
     exec_time += omp_get_wtime();
 
