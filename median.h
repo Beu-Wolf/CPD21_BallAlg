@@ -64,14 +64,16 @@ item_t pick_pivot(item_t* vec, int len) {
     if(len < 5) return nlogn_median(vec, len);
 
     int n_sub_arrays = len/5;
-    item_t medians[n_sub_arrays];
+    item_t* medians = (item_t *) malloc(n_sub_arrays*sizeof(item_t));
     // n/5 * O(1) => O(n)
     for(int i = 0; i < n_sub_arrays; i++) {
         // O(1), constant values
         medians[i] = nlogn_median(&(vec[i*5]), 5);
     }
 
-    return select_ith(medians, n_sub_arrays, n_sub_arrays/2);
+    item_t t = select_ith(medians, n_sub_arrays, n_sub_arrays/2);
+    free(medians);
+    return t;
 }
 
 int cmp_item(const void* _a, const void* _b) {

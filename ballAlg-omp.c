@@ -21,7 +21,7 @@ typedef struct {
     long size;
     long tree_id;
     long start_idx;
-} aux_t;
+} aux_t; // parent node info
 
 // core functions
 void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
@@ -79,42 +79,44 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
     for(long aux = 1; (aux <<= 1) < n_points; n_levels++);
 
     // TODO: localidade: METER TUDO NUMA ESTRUTURA PARA FICAR TUDO NA CACHE
+    // TODO (really minor): memory is still being used after processing leaves (compared
+    //       to recursive version)
     aux_t* part_sizes = (aux_t*) malloc((1 << n_levels) * sizeof(aux_t));
 
-    printf("[%ld POINTS] Number of levels: %ld\n", n_points, n_levels);
+    // printf("[%ld POINTS] Number of levels: %ld\n", n_points, n_levels);
     for(long level = 0; level < n_levels; level++) {
         long n_level_nodes = 1 << level;
         // printf("level %ld has %ld nodes\n", level, n_level_nodes);
 
-        for(long node_idx = 0; node_idx < n_level_nodes; node_idx++) {
+        for(long level_node_idx = 0; level_node_idx < n_level_nodes; level_node_idx++) {
             // calculate cenas
-            long cur_node_idx = (1 << level) + node_idx - 1;
+            long cur_node_idx = (1 << level) + level_node_idx - 1;
             aux_t cur_info;
-            long x;
             if(level == 0) {
                 cur_info.size = n_points;
                 cur_info.tree_id = 0;
                 cur_info.start_idx = 0;
-                x = n_points / 2;
+                // x = n_points / 2;
             } else {
-                long prev_node_idx = node_idx / 2;
-                long prev_size_idx = (1 << (level-1)) + prev_node_idx - 1;
-                aux_t parent = part_sizes[prev_size_idx];
+                long prev_level_parent_idx = level_node_idx / 2; // parent's index relative to the previous level
+                long parent_idx = (1 << (level-1)) + prev_level_parent_idx - 1;
+                aux_t parent = part_sizes[parent_idx];
+
                 if(parent.size == 1) {
                     continue;
                 }
 
                 // declared in the scope above to be used later
-                x = parent.size / 2;
+                long x = parent.size / 2;
                 long y = parent.size % 2;
-                if(node_idx % 2 == 0) { // left child
+                if(level_node_idx % 2 == 0) { // left child
                     cur_info.size = x;
                     cur_info.tree_id = parent.tree_id + 1;
                     cur_info.start_idx = parent.start_idx;
 
                 } else { // right child
                     cur_info.size = x + y;
-                    cur_info.tree_id = parent.tree_id + 2*x;
+                    cur_info.tree_id = parent.tree_id + 2*x; // 2*x - 1 + 1
                     cur_info.start_idx = parent.start_idx + x;
                 }
             }
@@ -122,7 +124,7 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
 
             /*
             printf("%ld, %ld: [%ld, %ld[ (%ld), id=%ld\n",
-                    level, node_idx, 
+                    level, level_node_idx, 
                     cur_info.start_idx, cur_info.start_idx + cur_info.size, cur_info.size,
                     cur_info.tree_id);
                     */
@@ -205,7 +207,7 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
             node->center = centers[cur_info.tree_id];
             node->radius = sq_radius;
             node->left = cur_info.tree_id + 1;
-            node->right = cur_info.tree_id + 2*x;
+            node->right = cur_info.tree_id + (cur_info.size / 2) * 2; // size / 2 * 2
         }
     }
 }

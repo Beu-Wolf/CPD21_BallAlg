@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: ./test/go.sh <serial>
+# Usage: ./test/go.sh [serial]
 # if "serial" given, test serial version
 
 N_ITER=1
