@@ -17,6 +17,11 @@ typedef struct _node {
     long right;
 } node_t;
 
+typedef struct {
+    long size;
+    long tree_id;
+    long start_idx;
+} aux_t;
 
 // core functions
 void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
@@ -66,6 +71,147 @@ int main(int argc, char*argv[]){
 }
 
 void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers) {
+    // number of nodes in the tree
+    long n_nodes = 2*n_points - 1;
+
+    // calculate number of tree levels
+    long n_levels = 2;
+    for(long aux = 1; (aux <<= 1) < n_points; n_levels++);
+
+    // TODO: localidade: METER TUDO NUMA ESTRUTURA PARA FICAR TUDO NA CACHE
+    aux_t* part_sizes = (aux_t*) malloc((1 << n_levels) * sizeof(aux_t));
+
+    printf("[%ld POINTS] Number of levels: %ld\n", n_points, n_levels);
+    for(long level = 0; level < n_levels; level++) {
+        long n_level_nodes = 1 << level;
+        // printf("level %ld has %ld nodes\n", level, n_level_nodes);
+
+        for(long node_idx = 0; node_idx < n_level_nodes; node_idx++) {
+            // calculate cenas
+            long cur_node_idx = (1 << level) + node_idx - 1;
+            aux_t cur_info;
+            long x;
+            if(level == 0) {
+                cur_info.size = n_points;
+                cur_info.tree_id = 0;
+                cur_info.start_idx = 0;
+                x = n_points / 2;
+            } else {
+                long prev_node_idx = node_idx / 2;
+                long prev_size_idx = (1 << (level-1)) + prev_node_idx - 1;
+                aux_t parent = part_sizes[prev_size_idx];
+                if(parent.size == 1) {
+                    continue;
+                }
+
+                // declared in the scope above to be used later
+                x = parent.size / 2;
+                long y = parent.size % 2;
+                if(node_idx % 2 == 0) { // left child
+                    cur_info.size = x;
+                    cur_info.tree_id = parent.tree_id + 1;
+                    cur_info.start_idx = parent.start_idx;
+
+                } else { // right child
+                    cur_info.size = x + y;
+                    cur_info.tree_id = parent.tree_id + 2*x;
+                    cur_info.start_idx = parent.start_idx + x;
+                }
+            }
+            part_sizes[cur_node_idx] = cur_info;
+
+            /*
+            printf("%ld, %ld: [%ld, %ld[ (%ld), id=%ld\n",
+                    level, node_idx, 
+                    cur_info.start_idx, cur_info.start_idx + cur_info.size, cur_info.size,
+                    cur_info.tree_id);
+                    */
+
+            sop_t* my_wset = (wset + cur_info.start_idx);
+            long my_n_points = cur_info.size;
+
+            if(cur_info.size == 1) {
+                // create leaf node
+                node_t *leaf = &(tree[cur_info.tree_id]);
+                leaf->id = cur_info.tree_id;
+                leaf->center = POINTS[my_wset[0].point_idx];
+                leaf->radius = 0.0;
+                leaf->left = -1;
+                leaf->right = -1;
+                continue;
+            }
+
+            // find furthest points
+            long a_idx, b_idx;
+            find_furthest_points(my_wset, my_n_points, &a_idx, &b_idx);
+
+            // orthogonal projection
+            calc_orth_projs(my_wset, my_n_points, a_idx, b_idx);
+
+            // partitions the array into two subsets according to median
+            double mdn_sop = 0.0;
+            if(my_n_points&1) { // odd
+                sop_t mdn = select_ith(my_wset, my_n_points, my_n_points/2);
+                mdn_sop = mdn.sop;
+                orth_proj(N_DIMS, POINTS[mdn.point_idx], POINTS[a_idx], POINTS[b_idx], centers[cur_info.tree_id]);
+            } else {
+                // lm = lower median
+                // um = upper median
+                sop_t lm = select_ith(my_wset, my_n_points, (my_n_points-1)/2);
+                sop_t um;
+                int num_equals = 0; // number of times we found lm. um may be equal to lm
+                um.sop =  DBL_MAX;
+                for(int i = 0; i < my_n_points; i++) {
+                    if(my_wset[i].sop == lm.sop) {
+                        num_equals++;
+
+                    } else if(my_wset[i].sop > lm.sop && my_wset[i].sop < um.sop) {
+                        um = my_wset[i];
+                    }
+                }
+
+                if(num_equals > 1) {
+                    // if um is equal to lm, then the center is given by lm
+                    orth_proj(N_DIMS, POINTS[lm.point_idx], POINTS[a_idx], POINTS[b_idx], centers[cur_info.tree_id]);
+                    mdn_sop = lm.sop;
+                } else {
+                    // calculate averages
+                    double* lm_op = (double*) malloc(sizeof(double) * N_DIMS);
+                    double* um_op = (double*) malloc(sizeof(double) * N_DIMS);
+                    if(!lm_op || !um_op) exit(-1);
+                    orth_proj(N_DIMS, POINTS[lm.point_idx], POINTS[a_idx], POINTS[b_idx], lm_op);
+                    orth_proj(N_DIMS, POINTS[um.point_idx], POINTS[a_idx], POINTS[b_idx], um_op);
+
+                    vec_sum(N_DIMS, lm_op, um_op, centers[cur_info.tree_id]);
+                    vec_scalar_mul(N_DIMS, centers[cur_info.tree_id], 0.5, centers[cur_info.tree_id]);
+                    mdn_sop = lm.sop + um.sop;
+                    free(lm_op);
+                    free(um_op);
+                }
+            }
+
+            partition(my_wset, my_n_points, mdn_sop);
+
+            double sq_radius = 0.0;
+            double* center = centers[cur_info.tree_id];
+            for(int i = 0; i < my_n_points; i++) {
+                double new_rad = squared_dist(N_DIMS, center, POINTS[my_wset[i].point_idx]);
+                if(sq_radius < new_rad) sq_radius = new_rad;
+            }
+
+            // create node
+            node_t* node = tree + cur_info.tree_id;
+            node->id = cur_info.tree_id;
+            node->center = centers[cur_info.tree_id];
+            node->radius = sq_radius;
+            node->left = cur_info.tree_id + 1;
+            node->right = cur_info.tree_id + 2*x;
+        }
+    }
+}
+
+/*
+void old_build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers) {
 
     if(n_points == 1) {
         // create leaf node
@@ -157,6 +303,7 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
         build_tree(n_right, wset + n_left, node->right, tree, centers);
     }
 }
+*/
 
 typedef struct {
     double max;
