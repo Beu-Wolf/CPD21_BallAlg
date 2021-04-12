@@ -88,7 +88,7 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
         long n_level_nodes = 1 << level;
         // printf("level %ld has %ld nodes\n", level, n_level_nodes);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
         for(long level_node_idx = 0; level_node_idx < n_level_nodes; level_node_idx++) {
             // calculate cenas
             long cur_node_idx = (1 << level) + level_node_idx - 1;

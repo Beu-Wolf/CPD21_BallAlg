@@ -11,3 +11,11 @@ WITH TASKS:
  TODO:
  Explore not using tasks, but using multiple parallel sections and forking/joining them
  Explore nested parallellism, however professor didn't seem to keen on it idk
+
+FOR VERSION:
+ - With a simple for, we get speedups close to 2, but not more than that
+ - putting an if to not create that many threads is not good
+ - ompP shows that there is virtually no overhead with management, but more with imbalance
+ - dynamic scheduling helped a little bit, and is the best scheduling
+ - adding a parallel in calc_orth_projs does not help
+ - custom function in find_furthest_points does not help has well
