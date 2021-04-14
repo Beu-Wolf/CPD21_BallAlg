@@ -88,7 +88,7 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
         long n_level_nodes = 1 << level;
         // printf("level %ld has %ld nodes\n", level, n_level_nodes);
 
-#pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic) if(n_level_nodes >= 2)
         for(long level_node_idx = 0; level_node_idx < n_level_nodes; level_node_idx++) {
             // calculate cenas
             long cur_node_idx = (1 << level) + level_node_idx - 1;
@@ -277,6 +277,7 @@ void find_furthest_points(sop_t* wset, long n_points, long* a, long* b) {
 void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx) {
     double* a = POINTS[a_idx];
     double* b = POINTS[b_idx];
+    #pragma omp parallel for if(n_points > 2048) schedule(dynamic)
     for(int i = 0; i < n_points; i++) {
         wset[i].sop = semi_orth_proj(N_DIMS, POINTS[wset[i].point_idx], a, b);
     }

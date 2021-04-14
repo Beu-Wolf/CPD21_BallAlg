@@ -2,6 +2,7 @@
 
 # Usage: ./test/go.sh [serial]
 # if "serial" given, test serial version
+# if "tasks" given, test tasks version
 
 N_ITER=1
 tests=(
@@ -48,12 +49,17 @@ if [[ $# -eq 1 && $1 == "serial" ]]; then
     serial=1
 fi
 
+if [[ $# -eq 1 && $1 == "tasks" ]]; then
+    tasks=1
+fi
+
 make bench
 if [[ $? -eq 2 ]]; then
     exit
 fi
 
 [[ $serial ]] && bin="ballAlg-serial" || bin="ballAlg-omp"
+[[ $tasks ]] && bin="ballAlg-tasks" || bin="ballAlg-omp"
 
 echo "Running tests... (${N_ITER} iterations each)"
 echo -e "#dims\t\t#points\t\tseed\t\ttime (s)"
