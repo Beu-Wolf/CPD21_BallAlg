@@ -228,6 +228,7 @@ void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx) {
 }
 
 void dump_tree(node_t* tree, double** centers, long len) {
+#ifndef SKIP_DUMP
     printf("%d %ld\n", N_DIMS, len);
     for(int i = 0; i < len; i++) {
         printf("%d %ld %ld %.6f",
@@ -238,6 +239,8 @@ void dump_tree(node_t* tree, double** centers, long len) {
         }
         printf("\n");
     }
+#endif
+    return;
 }
 
 
