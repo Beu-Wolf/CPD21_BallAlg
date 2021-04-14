@@ -4,7 +4,6 @@
 # if "serial" given, test serial version
 
 N_ITER=1
-DIFF=0
 tests=(
     ## Test Correctness
     "2 5 0"
@@ -36,39 +35,23 @@ tests=(
     "50000 1000 0"
     "500000 100 0"
     "5000000 10 0"
+
+    ## Professor tests
+    "20 1000000 0" # 7.3
+    "3 5000000 0"  # 23.2
+    "4 10000000 0" # 57.2
+    "3 20000000 0" # 122.5
+    "4 20000000 0" # 131.6
 )
 
 if [[ $# -eq 1 && $1 == "serial" ]]; then
     serial=1
 fi
 
-make serial
+make bench
 if [[ $? -eq 2 ]]; then
     exit
 fi
-
-# if running serial no need to compile parallel version
-if [[ ! ${serial} ]]; then
-    make
-    if [[ $? -eq 2 ]]; then
-        exit
-    fi
-fi
-
-
-# Generate serial output if needed
-for arg in "${tests[@]}"; do
-    split=($arg)
-    dim=${split[0]}
-    num_points=${split[1]}
-    seed=${split[2]}
-
-    out="test/serial_out/${dim}_${num_points}_${seed}.out" 
-    if [[ ! -f ${out} ]]; then
-        echo "Generating output for ${arg}"
-        ./ballAlg-serial ${arg} > ${out} 2> /dev/null
-    fi
-done
 
 [[ $serial ]] && bin="ballAlg-serial" || bin="ballAlg-omp"
 
@@ -87,14 +70,6 @@ for arg in "${tests[@]}"; do
     sum=0
     for i in $(seq 1 ${N_ITER}); do
         time="$(./${bin} ${arg} 2>&1> ${tmp_out})"
-        if [[ ${DIFF} -eq 1 ]]; then
-            echo "Diffing"
-            diff -q ${tmp_out} ${out} > /dev/null
-            if [[ ! $? -eq 0 ]]; then
-                echo "[ERROR] Unexpected output from test [${arg}]"
-                exit
-            fi
-        fi
         sum=$(bc -l <<<"${sum}+${time}")
     done
     avg=$(bc -l <<<"${sum}/${N_ITER}")
