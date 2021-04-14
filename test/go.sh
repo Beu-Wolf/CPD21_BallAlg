@@ -4,7 +4,6 @@
 # if "serial" given, test serial version
 
 N_ITER=1
-DIFF=0
 tests=(
     ## Test Correctness
     "2 5 0"
@@ -62,23 +61,6 @@ if [[ ! ${serial} ]]; then
     fi
 fi
 
-
-if [[ ${DIFF} -eq 1 ]]; then
-    # Generate serial output if needed
-    for arg in "${tests[@]}"; do
-        split=($arg)
-        dim=${split[0]}
-        num_points=${split[1]}
-        seed=${split[2]}
-
-        out="test/serial_out/${dim}_${num_points}_${seed}.out" 
-        if [[ ! -f ${out} ]]; then
-            echo "Generating output for ${arg}"
-            ./ballAlg-serial ${arg} > ${out} 2> /dev/null
-        fi
-    done
-fi
-
 [[ $serial ]] && bin="ballAlg-serial" || bin="ballAlg-omp"
 
 echo "Running tests... (${N_ITER} iterations each)"
@@ -96,13 +78,6 @@ for arg in "${tests[@]}"; do
     sum=0
     for i in $(seq 1 ${N_ITER}); do
         time="$(./${bin} ${arg} 2>&1> ${tmp_out})"
-        if [[ ${DIFF} -eq 1 ]]; then
-            diff -q ${tmp_out} ${out} > /dev/null
-            if [[ ! $? -eq 0 ]]; then
-                echo "[ERROR] Unexpected output from test [${arg}]"
-                exit
-            fi
-        fi
         sum=$(bc -l <<<"${sum}+${time}")
     done
     avg=$(bc -l <<<"${sum}/${N_ITER}")
