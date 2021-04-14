@@ -3,6 +3,7 @@
  */
 double dot_prod(int dim, double* a, double* b) {
     double res = 0;
+    #pragma omp simd reduction(+:res)
     for(int i = 0; i < dim; i++) {
         res += a[i] * b[i];
     }
@@ -13,24 +14,28 @@ double dot_prod(int dim, double* a, double* b) {
  * performs c = a - b
  */
 void vec_sub(int dim, double* a, double* b, double* c) {
+    #pragma omp simd
     for(int i = 0; i < dim; i++) {
         c[i] = a[i]-b[i];
     }
 }
 
 void vec_sum(int dim, double* a, double* b, double* c) {
+    #pragma omp simd
     for(int i = 0; i < dim; i++) {
         c[i] = a[i]+b[i];
     }
 }
 
 void vec_scalar_mul(int dim, double* a, double scalar, double* c) {
+    #pragma omp simd
     for(int i = 0; i < dim; i++) {
         c[i] = scalar*a[i];
     }
 }
 
 void vec_copy(int dim, double* src, double* dst) {
+    #pragma omp simd
     for(int i = 0; i < dim; i++) {
         dst[i] = src[i];
     }
@@ -80,6 +85,7 @@ double semi_orth_proj(int dim, double* p, double* a, double* b) {
  */
 double squared_dist(int dim, double* a, double* b) {
     double square_sum = 0.0;
+    // #pragma omp simd
     for(int i = 0; i < dim; i++) {
         double diff = a[i] - b[i];
         square_sum += diff*diff;
