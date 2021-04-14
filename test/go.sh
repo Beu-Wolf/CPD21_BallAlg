@@ -4,6 +4,7 @@
 # if "serial" given, test serial version
 
 N_ITER=1
+DIFF=0
 tests=(
     ## Test Correctness
     "2 5 0"
@@ -86,10 +87,13 @@ for arg in "${tests[@]}"; do
     sum=0
     for i in $(seq 1 ${N_ITER}); do
         time="$(./${bin} ${arg} 2>&1> ${tmp_out})"
-        diff -q ${tmp_out} ${out} > /dev/null
-        if [[ ! $? -eq 0 ]]; then
-            echo "[ERROR] Unexpected output from test [${arg}]"
-            exit
+        if [[ ${DIFF} -eq 1 ]]; then
+            echo "Diffing"
+            diff -q ${tmp_out} ${out} > /dev/null
+            if [[ ! $? -eq 0 ]]; then
+                echo "[ERROR] Unexpected output from test [${arg}]"
+                exit
+            fi
         fi
         sum=$(bc -l <<<"${sum}+${time}")
     done
