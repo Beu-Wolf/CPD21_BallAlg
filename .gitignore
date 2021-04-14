@@ -1,4 +1,5 @@
 tests
+ballAlg-tasks
 ballAlg-serial
 ballAlg-omp
 *.out
