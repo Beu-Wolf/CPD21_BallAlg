@@ -45,40 +45,41 @@ tests=(
     "4 20000000 0" # 131.6
 )
 
-if [[ $# -eq 1 && $1 == "serial" ]]; then
-    serial=1
-fi
-
-if [[ $# -eq 1 && $1 == "tasks" ]]; then
-    tasks=1
-fi
-
 make bench
 if [[ $? -eq 2 ]]; then
     exit
 fi
 
-[[ $serial ]] && bin="ballAlg-serial" || bin="ballAlg-omp"
-[[ $tasks ]] && bin="ballAlg-tasks" || bin="ballAlg-omp"
+serial="serial"
+tasks="tasks"
+iter="omp"
+running="${serial} ${tasks} ${iter}"
 
 echo "Running tests... (${N_ITER} iterations each)"
-echo -e "#dims\t\t#points\t\tseed\t\ttime (s)"
-tmp_out="tmp.txt"
+printf "%10s %10s %10s  |  " "#dims" "#points" "seed"
+for bin in $running; do
+    printf "%10s" ${bin}
+done
+printf "\n"
+
 for arg in "${tests[@]}"; do
     split=($arg)
     dim=${split[0]}
     num_points=${split[1]}
     seed=${split[2]}
 
-    out="test/serial_out/${dim}_${num_points}_${seed}.out" 
+    printf "%10s %10s %10s  |  " "${dim}" "${num_points}" "${seed}"
 
-    echo -ne "${dim}\t\t${num_points}\t\t${seed}\t\t"
-    sum=0
-    for i in $(seq 1 ${N_ITER}); do
-        time="$(./${bin} ${arg} 2>&1> ${tmp_out})"
-        sum=$(bc -l <<<"${sum}+${time}")
+    for suf in $running; do
+        bin="ballAlg-${suf}"
+        sum=0
+        for i in $(seq 1 ${N_ITER}); do
+            time="$(./${bin} ${arg} 2>&1> /dev/null)"
+            sum=$(bc -l <<<"${sum}+${time}")
+        done
+        avg=$(bc -l <<<"${sum}/${N_ITER}")
+        printf "%10.4f" ${avg}
     done
-    avg=$(bc -l <<<"${sum}/${N_ITER}")
-    echo ${avg}
+
+    printf "\n"
 done
-rm ${tmp_out}
