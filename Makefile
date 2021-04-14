@@ -24,7 +24,7 @@ debug: ballAlg.c gen_points.c
 	gcc ${FLAGS} -g ballAlg-omp.c -o ${OMP_OUT}
 
 bench: ballAlg-omp.c ballAlg.c
-	gcc -lm ${OPT} -DSKIP_DUMP ballAlg.c -o ${SERIAL_OUT}
+	gcc ${FLAGS} ${OPT} -DSKIP_DUMP ballAlg.c -o ${SERIAL_OUT}
 	gcc ${FLAGS} ${OPT} -DSKIP_DUMP ballAlg-omp.c -o ${OMP_OUT}
 	gcc ${FLAGS} ${OPT} -DSKIP_DUMP ballAlg-onlytasks.c -o ${TASKS_OUT}
 
