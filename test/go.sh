@@ -48,17 +48,9 @@ if [[ $# -eq 1 && $1 == "serial" ]]; then
     serial=1
 fi
 
-make serial
+make bench
 if [[ $? -eq 2 ]]; then
     exit
-fi
-
-# if running serial no need to compile parallel version
-if [[ ! ${serial} ]]; then
-    make
-    if [[ $? -eq 2 ]]; then
-        exit
-    fi
 fi
 
 [[ $serial ]] && bin="ballAlg-serial" || bin="ballAlg-omp"
