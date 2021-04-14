@@ -1,5 +1,5 @@
 tests
-ballAlg-tasks
-ballAlg-serial
-ballAlg-omp
+ballAlg_serial
+ballAlg_recur
+ballAlg_iter
 *.out

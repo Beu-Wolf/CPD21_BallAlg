@@ -33,7 +33,7 @@ for arg in "${tests[@]}"; do
     fi
 done
 
-versions="ballAlg-omp ballAlg-tasks"
+versions="ballAlg_iter ballAlg_recur"
 
 tmp_out="tmp.txt"
 rm -f test/err/*

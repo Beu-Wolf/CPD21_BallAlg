@@ -29,8 +29,8 @@ if [[ $? -eq 2 ]]; then
 fi
 
 serial="serial"
-tasks="tasks"
-iter="omp"
+tasks="recur"
+iter="iter"
 running="${serial} ${tasks} ${iter}"
 
 echo "Running tests... (${N_ITER} iterations each)"
@@ -49,7 +49,7 @@ for arg in "${tests[@]}"; do
     printf "%10s %10s %10s  |  " "${dim}" "${num_points}" "${seed}"
 
     for suf in $running; do
-        bin="ballAlg-${suf}"
+        bin="ballAlg_${suf}"
         sum=0
         for i in $(seq 1 ${N_ITER}); do
             time="$(./${bin} ${arg} 2>&1> /dev/null)"

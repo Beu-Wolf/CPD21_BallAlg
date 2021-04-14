@@ -1,45 +1,52 @@
 FLAGS=-fopenmp -lm
+EXTRA=
 OPT=-O3
 
-SERIAL_OUT=ballAlg-serial
-TASKS_OUT=ballAlg-tasks
-OMP_OUT=ballAlg-omp
+SERIAL=ballAlg_serial
+SERIAL_C=${SERIAL}.c
+SERIAL_OUT=${SERIAL}
 
-QUERY_OUT=ballQuery
+RECUR=ballAlg_recur
+RECUR_C=${RECUR}.c
+RECUR_OUT=${RECUR}
 
-all: serial tasks iter
+ITER=ballAlg_iter
+ITER_C=${ITER}.c
+ITER_OUT=${ITER}
 
-serial: ballAlg.c gen_points.c
-	gcc ${FLAGS} ${OPT} ballAlg.c -o ${SERIAL_OUT}
-
-tasks: ballAlg-onlytasks.c gen_points.c
-	gcc ${FLAGS} ${OPT} ballAlg-onlytasks.c -o ${TASKS_OUT}
-
-iter: ballAlg-omp.c gen_points.c
-	gcc ${FLAGS} ${OPT} ballAlg-omp.c -o ${OMP_OUT}
-
-
-profile: ballAlg.c gen_points.c
-	gcc ${FLAGS} ${OPT} -pg ballAlg.c -o ${SERIAL_OUT}
-	gcc ${FLAGS} ${OPT} -pg ballAlg-omp.c -o ${OMP_OUT}
-	gcc ${FLAGS} ${OPT} -pg ballAlg-onlytasks.c -o ${TASKS_OUT}
+QUERY=ballQuery
+QUERY_C=${QUERY}.c
+QUERY_OUT=${QUERY}
 
 
-debug: ballAlg.c gen_points.c
-	gcc ${FLAGS} -g ballAlg.c -o ${SERIAL_OUT}
-	gcc ${FLAGS} -g ballAlg-omp.c -o ${OMP_OUT}
-	gcc ${FLAGS} -g ballAlg-onlytasks.c -o ${TASKS_OUT}
+all: serial recursive iterative
 
-bench: ballAlg-omp.c ballAlg.c
-	gcc ${FLAGS} ${OPT} -DSKIP_DUMP ballAlg.c -o ${SERIAL_OUT}
-	gcc ${FLAGS} ${OPT} -DSKIP_DUMP ballAlg-omp.c -o ${OMP_OUT}
-	gcc ${FLAGS} ${OPT} -DSKIP_DUMP ballAlg-onlytasks.c -o ${TASKS_OUT}
+serial: ${SERIAL_C} gen_points.c
+	gcc ${FLAGS} ${EXTRA} ${SERIAL_C} -o ${SERIAL_OUT}
+
+recursive: ${RECUR_C} gen_points.c
+	gcc ${FLAGS} ${EXTRA} ${RECUR_C} -o ${RECUR_OUT}
+
+iterative: ${ITER_C} gen_points.c
+	gcc ${FLAGS} ${EXTRA} ${ITER_C} -o ${ITER_OUT}
+
+
+profile: EXTRA=${OPT} -pg
+profile: all
+
+debug: EXTRA=-g
+debug: all
+
+bench: EXTRA=${OPT} -DSKIP_DUMP
+bench: all
+
 
 
 query: ballQuery.c
-	gcc -O3 -lm ballQuery.c -o ${QUERY_OUT}
+	gcc -O3 -lm ${QUERY_C} -o ${QUERY_OUT}
+
 
 
 .PHONY: clean-serial
 clean:
-	rm -f ${SERIAL_OUT} ${QUERY_OUT} ${OMP_OUT} ${TASKS_OUT}
+	rm -f ${SERIAL_OUT} ${RECUR_OUT} ${ITER_OUT} ${QUERY_OUT}
