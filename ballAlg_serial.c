@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 // #define DEBUG
 #include "vectors.h"
@@ -31,7 +32,7 @@ int main(int argc, char*argv[]){
     
     long n_points;
 
-    double exec_time = -omp_get_wtime();
+    double exec_time = -time(NULL);
     POINTS = get_points(argc, argv, &N_DIMS, &n_points);
 
     sop_t* wset = (sop_t*)malloc(sizeof(sop_t) * n_points);
@@ -55,7 +56,7 @@ int main(int argc, char*argv[]){
     }
 
     build_tree(n_points, wset, 0, tree, centers);
-    exec_time += omp_get_wtime();
+    exec_time += time(NULL);
 
     fprintf(stderr, "%.1lf\n", exec_time);
     dump_tree(tree, centers, 2*n_points-1);

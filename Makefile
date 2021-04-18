@@ -1,4 +1,4 @@
-FLAGS=-fopenmp -lm
+FLAGS=-lm
 EXTRA=
 OPT=-O3
 
@@ -25,10 +25,10 @@ serial: ${SERIAL_C} gen_points.c
 	gcc ${FLAGS} ${EXTRA} ${SERIAL_C} -o ${SERIAL_OUT}
 
 recursive: ${RECUR_C} gen_points.c
-	gcc ${FLAGS} ${EXTRA} ${RECUR_C} -o ${RECUR_OUT}
+	gcc ${FLAGS} -fopenmp ${EXTRA} ${RECUR_C} -o ${RECUR_OUT}
 
 iterative: ${ITER_C} gen_points.c
-	gcc ${FLAGS} ${EXTRA} ${ITER_C} -o ${ITER_OUT}
+	gcc ${FLAGS} -fopenmp ${EXTRA} ${ITER_C} -o ${ITER_OUT}
 
 
 profile: EXTRA=${OPT} -pg
