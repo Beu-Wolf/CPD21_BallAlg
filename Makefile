@@ -18,10 +18,10 @@ PARALL_ITR_OUT=ballAlg_parall_itr
 all: serial-rec serial-itr parall-rec parall-itr
 
 serial-rec: ballAlg.c vectors.c common.c build_tree_rec.c
-	gcc ${EXTRA} $^ -o ${SERIAL_REC_OUT} ${FLAGS}
+	gcc -DSERIAL ${EXTRA} $^ -o ${SERIAL_REC_OUT} ${FLAGS} 
 
 serial-itr: ballAlg.c vectors.c common.c build_tree_itr.c
-	gcc ${EXTRA} $^ -o ${SERIAL_ITR_OUT} ${FLAGS}
+	gcc -DSERIAL ${EXTRA} $^ -o ${SERIAL_ITR_OUT} ${FLAGS} 
 
 parall-rec: ballAlg_omp.c vectors.c common.c build_tree_rec.c
 	gcc ${PAR} ${EXTRA} $^ -o ${PARALL_REC_OUT} ${FLAGS}
