@@ -1,4 +1,4 @@
-FLAGS=-lm -O3
+FLAGS=-O3 -lm
 PAR=-fopenmp
 EXTRA=
 
@@ -18,16 +18,16 @@ PARALL_ITR_OUT=ballAlg_parall_itr
 all: serial-rec serial-itr parall-rec parall-itr
 
 serial-rec: ballAlg.c vectors.c common.c build_tree_rec.c
-	gcc ${FLAGS} ${EXTRA} $^ -o ${SERIAL_REC_OUT}
+	gcc ${EXTRA} $^ -o ${SERIAL_REC_OUT} ${FLAGS}
 
 serial-itr: ballAlg.c vectors.c common.c build_tree_itr.c
-	gcc ${FLAGS} ${EXTRA} $^ -o ${SERIAL_ITR_OUT}
+	gcc ${EXTRA} $^ -o ${SERIAL_ITR_OUT} ${FLAGS}
 
 parall-rec: ballAlg_omp.c vectors.c common.c build_tree_rec.c
-	gcc ${FLAGS} ${PAR} ${EXTRA} $^ -o ${PARALL_REC_OUT}
+	gcc ${PAR} ${EXTRA} $^ -o ${PARALL_REC_OUT} ${FLAGS}
 
 parall-itr: ballAlg_omp.c vectors.c common.c build_tree_itr.c
-	gcc ${FLAGS} ${PAR} ${EXTRA} $^ -o ${PARALL_ITR_OUT}
+	gcc ${PAR} ${EXTRA} $^ -o ${PARALL_ITR_OUT} ${FLAGS}
 
 
 profile: EXTRA= -pg
