@@ -29,11 +29,11 @@ for arg in "${tests[@]}"; do
     out="test/serial_out/${dim}_${num_points}_${seed}.out" 
     if [[ ! -f ${out} ]]; then
         echo "Generating output for ${arg}"
-        ./ballAlg-serial ${arg} > ${out} 2> /dev/null
+        ./ballAlg_serial_rec ${arg} > ${out} 2> /dev/null
     fi
 done
 
-versions="ballAlg_iter ballAlg_recur"
+versions="ballAlg_parall_itr ballAlg_parall_rec"
 
 tmp_out="tmp.txt"
 rm -f test/err/*
