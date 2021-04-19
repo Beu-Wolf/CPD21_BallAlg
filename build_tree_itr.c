@@ -13,7 +13,6 @@ typedef struct {
     long size;
     long tree_id;
     long start_idx;
-    char padding[64];
 } aux_t; // parent node info
 
 extern int N_DIMS;
