@@ -1,8 +1,6 @@
 #!/bin/bash
 
-# Usage: ./test/go.sh [serial]
-# if "serial" given, test serial version
-# if "tasks" given, test tasks version
+# Usage: ./test/stress.sh
 
 N_ITER=1
 tests=(
@@ -28,15 +26,16 @@ if [[ $? -eq 2 ]]; then
     exit
 fi
 
-serial="serial"
-tasks="recur"
-iter="iter"
-running="${serial} ${tasks} ${iter}"
+si="serial_itr"
+sr="serial_rec"
+pi="parall_itr"
+pr="parall_rec"
+running="${sr} ${si} ${pr} ${pi}"
 
 echo "Running tests... (${N_ITER} iterations each)"
 printf "%10s %10s %10s  |  " "#dims" "#points" "seed"
 for bin in $running; do
-    printf "%10s" ${bin}
+    printf "%12s" ${bin}
 done
 printf "\n"
 
@@ -56,7 +55,7 @@ for arg in "${tests[@]}"; do
             sum=$(bc -l <<<"${sum}+${time}")
         done
         avg=$(bc -l <<<"${sum}/${N_ITER}")
-        printf "%10.4f" ${avg}
+        printf "%12.4f" ${avg}
     done
 
     printf "\n"
