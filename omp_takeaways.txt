@@ -1,0 +1,21 @@
+WITH TASKS:
+ - Only using tasks reduced time from 11.0 seconds to 4.9
+ - setting a depth of n_points = 2 to stop the creation of tasks shaves 0.1 seconds
+ - adding a taskloop to find square distances does no improve time
+ - adding more taskloops in some easy to parallelize functions does no improve
+    - Added in calculate square distances (line 135)
+    - Added in find_furthest_points (lines 201, 217)
+    - Added in calc_orth_projs (line 236)
+ - created custom max reduction function, might be usefull
+
+ TODO:
+ Explore not using tasks, but using multiple parallel sections and forking/joining them
+ Explore nested parallellism, however professor didn't seem to keen on it idk
+
+FOR VERSION:
+ - With a simple for, we get speedups close to 2, but not more than that
+ - putting an if to not create that many threads is not good
+ - ompP shows that there is virtually no overhead with management, but more with imbalance
+ - dynamic scheduling helped a little bit, and is the best scheduling
+ - adding a parallel in calc_orth_projs does not help
+ - custom function in find_furthest_points does not help has well

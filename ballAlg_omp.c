@@ -1,8 +1,7 @@
-#include <time.h>
+#include <omp.h>
 
 #include "gen_points.c"
 #include "common.h"
-
 
 extern int N_DIMS;
 extern double** POINTS;
@@ -11,7 +10,8 @@ int main(int argc, char*argv[]){
     
     long n_points;
 
-    double exec_time = -time(NULL);
+    double exec_time = -omp_get_wtime();
+
     POINTS = get_points(argc, argv, &N_DIMS, &n_points);
 
     sop_t* wset = (sop_t*)malloc(sizeof(sop_t) * n_points);
@@ -35,7 +35,7 @@ int main(int argc, char*argv[]){
     }
 
     build_tree(n_points, wset, 0, tree, centers);
-    exec_time += time(NULL);
+    exec_time += omp_get_wtime();
 
     fprintf(stderr, "%.1lf\n", exec_time);
 

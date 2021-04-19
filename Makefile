@@ -1,18 +1,51 @@
-all: ballAlg.c gen_points.c
-	gcc -lm -O3 ballAlg.c -fopenmp -o ballAlg
+FLAGS=-lm -O3
+PAR=-fopenmp
+EXTRA=
 
-profile: ballAlg.c gen_points.c
-	gcc -lm -O3 -pg ballAlg.c -fopenmp -o ballAlg
+MAIN_SERIAL_C=ballAlg.c
+MAIN_PARALLEL_C=ballAlg_omp.c
 
-debug: ballAlg.c gen_points.c
-	gcc -lstdc++ -lm -g ballAlg.c -fopenmp -o ballAlg
+
+SERIAL_C=${SERIAL}.c
+SERIAL_OUT=${SERIAL}
+
+SERIAL_REC_OUT=ballAlg_serial_rec
+SERIAL_ITR_OUT=ballAlg_serial_itr
+PARALL_REC_OUT=ballAlg_parall_rec
+PARALL_ITR_OUT=ballAlg_parall_itr
+
+
+all: serial-rec serial-itr parall-rec parall-itr
+
+serial-rec: ballAlg.c vectors.c common.c build_tree_rec.c
+	gcc ${FLAGS} ${EXTRA} $^ -o ${SERIAL_REC_OUT}
+
+serial-itr: ballAlg.c vectors.c common.c build_tree_itr.c
+	gcc ${FLAGS} ${EXTRA} $^ -o ${SERIAL_ITR_OUT}
+
+parall-rec: ballAlg_omp.c vectors.c common.c build_tree_rec.c
+	gcc ${FLAGS} ${PAR} ${EXTRA} $^ -o ${PARALL_REC_OUT}
+
+parall-itr: ballAlg_omp.c vectors.c common.c build_tree_itr.c
+	gcc ${FLAGS} ${PAR} ${EXTRA} $^ -o ${PARALL_ITR_OUT}
+
+
+profile: EXTRA= -pg
+profile: all
+
+debug: EXTRA=-g
+debug: all
+
+bench: EXTRA= -DSKIP_DUMP
+bench: all
+
+
 
 query: ballQuery.c
-	gcc -O3 -lm ballQuery.c -o ballQuery
+	gcc -O3 -lm ${QUERY_C} -o ${QUERY_OUT}
 
-test: test.c vectors.h
-	gcc test.c -o test
 
-.PHONY: clean
+
+.PHONY: clean-serial
 clean:
-	rm -f ballAlg test ballQuery
+	rm -f ${SERIAL_REC_OUT} ${SERIAL_ITR_OUT} ${PARALL_REC_OUT} ${PARALL_ITR_OUT}

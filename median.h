@@ -64,14 +64,16 @@ item_t pick_pivot(item_t* vec, int len) {
     if(len < 5) return nlogn_median(vec, len);
 
     int n_sub_arrays = len/5;
-    item_t medians[n_sub_arrays];
+    item_t* medians = (item_t *) malloc(n_sub_arrays*sizeof(item_t));
     // n/5 * O(1) => O(n)
     for(int i = 0; i < n_sub_arrays; i++) {
         // O(1), constant values
         medians[i] = nlogn_median(&(vec[i*5]), 5);
     }
 
-    return select_ith(medians, n_sub_arrays, n_sub_arrays/2);
+    item_t t = select_ith(medians, n_sub_arrays, n_sub_arrays/2);
+    free(medians);
+    return t;
 }
 
 int cmp_item(const void* _a, const void* _b) {
@@ -83,8 +85,22 @@ int cmp_item(const void* _a, const void* _b) {
     return 0;
 }
 
+void insertion_sort(item_t* vec, int len) {
+    int i, j;
+    for (i = 1; i < len; i++) {
+        item_t eli = vec[i];
+        j = i-1;
+        while(j >= 0 && eli.sop < vec[j].sop) {
+            vec[j+1] = vec[j];
+            j--;
+        }
+        vec[j+1] = eli;
+    }
+}
+
 item_t nlogn_median(item_t* vec, int len) {
-    qsort(vec, len, sizeof(item_t), cmp_item);
+    // qsort(vec, len, sizeof(item_t), cmp_item);
+    insertion_sort(vec, len);
     item_t res;
     res.sop = (vec[len/2].sop + vec[(len-1)/2].sop)/2;
     return res;
