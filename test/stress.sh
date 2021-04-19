@@ -32,31 +32,34 @@ pi="parall_itr"
 pr="parall_rec"
 running="${sr} ${si} ${pr} ${pi}"
 
+threads=("1" "2" "4" "8")
+
 echo "Running tests... (${N_ITER} iterations each)"
-printf "%10s %10s %10s  |  " "#dims" "#points" "seed"
+printf "%10s %10s %5s %5s |  " "#dims" "#points" "seed" "#thrds"
 for bin in $running; do
     printf "%12s" ${bin}
 done
 printf "\n"
 
 for arg in "${tests[@]}"; do
-    split=($arg)
-    dim=${split[0]}
-    num_points=${split[1]}
-    seed=${split[2]}
+    for thread in "${threads[@]}"; do
+        split=($arg)
+        dim=${split[0]}
+        num_points=${split[1]}
+        seed=${split[2]}
 
-    printf "%10s %10s %10s  |  " "${dim}" "${num_points}" "${seed}"
+        printf "%10s %10s %5s  %5s |  " "${dim}" "${num_points}" "${seed}" "${thread}"
 
-    for suf in $running; do
-        bin="ballAlg_${suf}"
-        sum=0
-        for i in $(seq 1 ${N_ITER}); do
-            time="$(./${bin} ${arg} 2>&1> /dev/null)"
-            sum=$(bc -l <<<"${sum}+${time}")
+        for suf in $running; do
+            bin="ballAlg_${suf}"
+            sum=0
+            for i in $(seq 1 ${N_ITER}); do
+                time="$(OMP_NUM_THREADS=${thread} ./${bin} ${arg} 2>&1> /dev/null)"
+                sum=$(bc -l <<<"${sum}+${time}")
+            done
+            avg=$(bc -l <<<"${sum}/${N_ITER}")
+            printf "%12.4f" ${avg}
         done
-        avg=$(bc -l <<<"${sum}/${N_ITER}")
-        printf "%12.4f" ${avg}
+        printf "\n"
     done
-
-    printf "\n"
 done
