@@ -1,3 +1,10 @@
+# choose gcc version
+HOST=$(shell sh -c "cat /etc/hostname | sed 's/[0-9]*p.*//'")
+GCC=gcc
+ifeq ($(HOST),lab)
+    GCC=gcc-10
+endif
+
 FLAGS=-lm
 PAR=-fopenmp
 EXTRA=
@@ -18,16 +25,16 @@ PARALL_ITR_OUT=ballAlg_parall_itr
 all: serial-rec serial-itr parall-rec parall-itr
 
 serial-rec: ballAlg.c vectors.c common.c build_tree_rec.c
-	gcc -DSERIAL ${EXTRA} $^ -o ${SERIAL_REC_OUT} ${FLAGS} 
+	${GCC} -DSERIAL ${EXTRA} $^ -o ${SERIAL_REC_OUT} ${FLAGS} 
 
 serial-itr: ballAlg.c vectors.c common.c build_tree_itr.c
-	gcc -DSERIAL ${EXTRA} $^ -o ${SERIAL_ITR_OUT} ${FLAGS} 
+	${GCC} -DSERIAL ${EXTRA} $^ -o ${SERIAL_ITR_OUT} ${FLAGS} 
 
 parall-rec: ballAlg_omp.c vectors.c common.c build_tree_rec.c
-	gcc ${PAR} ${EXTRA} $^ -o ${PARALL_REC_OUT} ${FLAGS}
+	${GCC} ${PAR} ${EXTRA} $^ -o ${PARALL_REC_OUT} ${FLAGS}
 
 parall-itr: ballAlg_omp.c vectors.c common.c build_tree_itr.c
-	gcc ${PAR} ${EXTRA} $^ -o ${PARALL_ITR_OUT} ${FLAGS}
+	${GCC} ${PAR} ${EXTRA} $^ -o ${PARALL_ITR_OUT} ${FLAGS}
 
 
 profile: EXTRA= -pg -O3
@@ -42,7 +49,7 @@ bench: all
 
 
 query: ballQuery.c
-	gcc -O3 -lm ${QUERY_C} -o ${QUERY_OUT}
+	${GCC} -O3 -lm ${QUERY_C} -o ${QUERY_OUT}
 
 
 
