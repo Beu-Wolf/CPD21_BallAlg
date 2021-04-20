@@ -9,8 +9,8 @@
 
 void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
 void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
-void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx);
-void find_furthest_points(sop_t* wset, long n_points, long* a, long* b);
+void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx, char is_parallel);
+void find_furthest_points(sop_t* wset, long n_points, long* a, long* b, char is_parallel);
 
 extern int N_DIMS;
 extern double** POINTS;
@@ -38,10 +38,10 @@ void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** c
 
     // find furthest points
     long a_idx, b_idx;
-    find_furthest_points(wset, n_points, &a_idx, &b_idx);
+    find_furthest_points(wset, n_points, &a_idx, &b_idx, 0);
 
     // orthogonal projection
-    calc_orth_projs(wset, n_points, a_idx, b_idx);
+    calc_orth_projs(wset, n_points, a_idx, b_idx, 0);
 
     // partitions the array into two subsets according to median
     double mdn_sop = 0.0;

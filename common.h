@@ -19,7 +19,7 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
 void dump_tree(node_t* tree, double** centers, long len);
 void print_point(double* point, int dims);
 
-void find_furthest_points(sop_t* wset, long n_points, long* a, long* b);
-void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx);
+void find_furthest_points(sop_t* wset, long n_points, long* a, long* b, char is_parallel);
+void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx, char is_parallel);
 
 #endif

@@ -5,10 +5,10 @@
 N_ITER=1
 tests=(
     ## Professor tests
-    "20 1000000 0" # 7.3
-    "3 5000000 0"  # 23.2
-    "4 10000000 0" # 57.2
-    "3 20000000 0" # 122.5
+    # "20 1000000 0" # 7.3
+    # "3 5000000 0"  # 23.2
+    # "4 10000000 0" # 57.2
+    # "3 20000000 0" # 122.5
     "4 20000000 0" # 131.6
 
     ## Stress test diagonal
@@ -30,9 +30,19 @@ si="serial_itr"
 sr="serial_rec"
 pi="parall_itr"
 pr="parall_rec"
-running="${sr} ${si} ${pr} ${pi}"
+running=(
+    ${sr}
+    # ${si}
+    # ${pr}
+    ${pi}
+)
 
-threads=("1" "2" "4" "8")
+threads=(
+    "1"
+    "2"
+    "4"
+    # "8"
+)
 
 echo "Running tests... (${N_ITER} iterations each)"
 printf "%10s %10s %5s %5s |  " "#dims" "#points" "seed" "#thrds"

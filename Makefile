@@ -1,4 +1,4 @@
-FLAGS=-O3 -lm
+FLAGS=-lm
 PAR=-fopenmp
 EXTRA=
 
@@ -30,13 +30,13 @@ parall-itr: ballAlg_omp.c vectors.c common.c build_tree_itr.c
 	gcc ${PAR} ${EXTRA} $^ -o ${PARALL_ITR_OUT} ${FLAGS}
 
 
-profile: EXTRA= -pg
+profile: EXTRA= -pg -O3
 profile: all
 
 debug: EXTRA=-g
 debug: all
 
-bench: EXTRA= -DSKIP_DUMP
+bench: EXTRA= -DSKIP_DUMP -O3
 bench: all
 
 
