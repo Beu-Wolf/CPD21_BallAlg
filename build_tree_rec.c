@@ -7,7 +7,10 @@
 #include "median.h"
 #include "sop.h"
 
-void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
+void build_tree_aux(
+    int n_points, sop_t* wset, long id, node_t* tree, double** centers,
+    int n_threads, int level, int max_thread_level
+);
 void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
 void calc_orth_projs(sop_t* wset, long n_points, long a_idx, long b_idx, char is_parallel);
 void find_furthest_points(sop_t* wset, long n_points, long* a, long* b, char is_parallel);
@@ -15,15 +18,28 @@ void find_furthest_points(sop_t* wset, long n_points, long* a, long* b, char is_
 extern int N_DIMS;
 extern double** POINTS;
 
-
 void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers) {
 #pragma omp parallel
     {
         #pragma omp master
-        build_tree_aux(n_points, wset, id, tree, centers);
+        {
+#ifndef SERIAL
+            int n_threads = omp_get_num_threads();
+#else
+            int n_threads = 1;
+#endif
+            int n_thread_levels = 2;
+            for(long aux = 1; (aux<<=1) < n_threads; n_thread_levels++);
+            build_tree_aux(n_points, wset, id, tree, centers, n_threads, 0, n_thread_levels - 2);
+        }
     }
 }
-void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** centers) {
+void build_tree_aux(
+    int n_points, sop_t* wset, long id, node_t* tree, double** centers,
+    int n_threads, int level, int create_task_level
+) {
+
+
 
     if(n_points == 1) {
         // create leaf node
@@ -36,12 +52,15 @@ void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** c
         return;
     }
 
+    char will_parallel = n_threads > (1<<level) ? 1 : 0;
+
     // find furthest points
     long a_idx, b_idx;
-    find_furthest_points(wset, n_points, &a_idx, &b_idx, 0);
+    //  parallelize furthest points if 
+    find_furthest_points(wset, n_points, &a_idx, &b_idx, will_parallel);
 
     // orthogonal projection
-    calc_orth_projs(wset, n_points, a_idx, b_idx, 0);
+    calc_orth_projs(wset, n_points, a_idx, b_idx, will_parallel);
 
     // partitions the array into two subsets according to median
     double mdn_sop = 0.0;
@@ -105,12 +124,12 @@ void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** c
     node->right = id + 2*n_left;
 
     
+    char will_task = level == create_task_level;
     // left partition
-    #pragma omp task untied if (n_points >= 8)
-    build_tree_aux(n_left, wset, node->left, tree, centers);
+    #pragma omp task untied if (level == create_task_level)
+    build_tree_aux(n_left, wset, node->left, tree, centers, n_threads, level+1, create_task_level);
 
-    #pragma omp task untied if (n_points >= 8)
+    #pragma omp task untied if (level == create_task_level)
     // right partition
-    build_tree_aux(n_right, wset + n_left, node->right, tree, centers);
-    
+    build_tree_aux(n_right, wset + n_left, node->right, tree, centers, n_threads, level+1, create_task_level);
 }
