@@ -91,3 +91,12 @@ void dump_tree(node_t* tree, double** centers, long len) {
     }
     return;
 }
+
+void print_point(double* point, int dims) {
+    printf("(");
+    int i;
+    for(i = 0; i < dims-1; i++) {
+        printf("%.6f, ", point[i]);
+    }
+    printf("%.6f)", point[i]);
+}
