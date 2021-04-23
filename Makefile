@@ -49,7 +49,7 @@ bench: all
 
 
 query: ballQuery.c
-	${GCC} -O3 -lm ${QUERY_C} -o ${QUERY_OUT}
+	${GCC} -O3 ballQuery.c -o ballQuery ${FLAGS}
 
 
 
