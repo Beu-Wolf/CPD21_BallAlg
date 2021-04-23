@@ -28,6 +28,7 @@ void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** cente
 #else
             int n_threads = 1;
 #endif
+            // calculate the log(n_threads)
             int n_thread_levels = 2;
             for(long aux = 1; (aux<<=1) < n_threads; n_thread_levels++);
             build_tree_aux(n_points, wset, id, tree, centers, n_threads, 0, n_thread_levels - 2);
@@ -52,11 +53,12 @@ void build_tree_aux(
         return;
     }
 
+    // parallelize intermediate functions only if we have more threads
+    // than the number of nodes
     char will_parallel = n_threads > (1<<level) ? 1 : 0;
 
     // find furthest points
     long a_idx, b_idx;
-    //  parallelize furthest points if 
     find_furthest_points(wset, n_points, &a_idx, &b_idx, will_parallel);
 
     // orthogonal projection
@@ -124,12 +126,12 @@ void build_tree_aux(
     node->right = id + 2*n_left;
 
     
-    char will_task = level == create_task_level;
+    char will_task = n_points > 128;
     // left partition
-    #pragma omp task untied if (level == create_task_level)
+    #pragma omp task untied if (will_task)
     build_tree_aux(n_left, wset, node->left, tree, centers, n_threads, level+1, create_task_level);
 
-    #pragma omp task untied if (level == create_task_level)
+    #pragma omp task untied if (will_task)
     // right partition
     build_tree_aux(n_right, wset + n_left, node->right, tree, centers, n_threads, level+1, create_task_level);
 }
