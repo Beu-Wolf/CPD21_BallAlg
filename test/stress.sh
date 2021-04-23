@@ -46,7 +46,7 @@ threads=(
 
 echo "Running tests... (${N_ITER} iterations each)"
 printf "%10s %10s %5s %5s |  " "#dims" "#points" "seed" "#thrds"
-for bin in $running; do
+for bin in ${running[@]}; do
     printf "%12s" ${bin}
 done
 printf "\n"
@@ -60,7 +60,7 @@ for arg in "${tests[@]}"; do
 
         printf "%10s %10s %5s  %5s |  " "${dim}" "${num_points}" "${seed}" "${thread}"
 
-        for suf in $running; do
+        for suf in ${running[@]}; do
             bin="ballAlg_${suf}"
             sum=0
             for i in $(seq 1 ${N_ITER}); do
