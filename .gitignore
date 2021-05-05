@@ -2,5 +2,6 @@ ballAlg_serial_itr
 ballAlg_serial_rec
 ballAlg_parall_itr
 ballAlg_parall_rec
+ballAlg-mpi
 *.out
 analysis.txt
