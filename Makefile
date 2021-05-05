@@ -29,6 +29,8 @@ parall-rec: ballAlg_omp.c vectors.c common.c build_tree_rec.c
 parall-itr: ballAlg_omp.c vectors.c common.c build_tree_itr.c
 	gcc ${PAR} ${EXTRA} $^ -o ${PARALL_ITR_OUT} ${FLAGS}
 
+mpi: ballAlg-mpi.c
+	mpicc $^ -o ballAlg-mpi -lm
 
 profile: EXTRA= -pg
 profile: all
