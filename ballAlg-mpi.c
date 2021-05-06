@@ -6,22 +6,43 @@
 
 #define DELEGATE_MASTER 1
 
+void find_furthest_points(long* wset, long n_points, long*a, long* b);
+void calc_orth_projs(long* wset, double* orthset, long n_points, long a_idx, long b_idx);
 
 extern int N_DIMS;
 extern double** POINTS;
 
-int main(int argc, char*argv[]){
-    
-    /*
-    long n_points;
+int main(int argc, char*argv[]) {
+
+    // Initialize MPI
+    MPI_Init(&argc, &argv);
+
+    // Get number of processes
+    int n_procs = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &n_procs);
+
+    // Initialize ranks and comm variable
+    int global_rank;
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
+    rank = global_rank;
+    MPI_Comm cur_comm = MPI_COMM_WORLD;
+
 
     double exec_time = -time(NULL);
+
+    long n_points;
     POINTS = get_points(argc, argv, &N_DIMS, &n_points);
 
-    sop_t* wset = (sop_t*)malloc(sizeof(sop_t) * n_points);
+    // wset: stores working indices
+    // orthset: stores orthogonal projections
+    // these arrays have matching members in the same indices
+    long* wset =      (long*)malloc(sizeof(long)   * n_points);
+    double* orthset = (double*)malloc(sizeof(double) * n_points);
     for(long i = 0; i < n_points; i++) {
-        wset[i].point_idx = i;
+        wset[i] = i;
     }
+
 
     // allocate tree
     // TODO: we may overflow malloc argument. Check that with teachers
@@ -37,28 +58,10 @@ int main(int argc, char*argv[]){
     for(int i = 0; i < n_nodes; i++) {
         centers[i] = &_centers[i*N_DIMS];
     }
-    */
 
-
-    // Initialize MPI
-    MPI_Init(&argc, &argv);
-
-    int total_procs = 0;
-    MPI_Comm_size(MPI_COMM_WORLD, &total_procs);
-
-    int global_rank;
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &global_rank);
-    rank = global_rank;
-
-
-    long n_points = 16;
-    int wset[n_points];
-    // TODO: (remove) populate array for testing
-    if(rank == 0) {
-        for(int i = 0; i < n_points; i++) {
-            wset[i] = i;
-        }
+    // Dump tree pt 1: Print tree dimensions
+    if(global_rank == 0) {
+        printf("%d %ld\n", N_DIMS, n_points);
     }
 
     // Calculate max levels
@@ -66,34 +69,43 @@ int main(int argc, char*argv[]){
     for(long aux = 1; (aux <<= 1) < n_points; max_levels++);
 
     long level = 0;
+    while(level < max_levels && n_procs > (1 << level)) {
 
-
-
-    MPI_Comm cur_comm = MPI_COMM_WORLD;
-
-    while(level < max_levels && total_procs > 1 << level) {
-
-        int world_size = 0;
+        int world_size;
+        long ab[2];
         MPI_Comm_size(cur_comm, &world_size);
 
         // TODO: ???? if(free nodes available):
 
         if(rank == 0) {
+            /*
             printf("[LEVEL %ld] Master %d is working on (", level, global_rank);
             for(int i = 0; i < n_points-1; i++) {
                 printf("%d, ", wset[i]);
             }
             printf("%d)\n", wset[n_points - 1]);
+            */
+
+            find_furthest_points(wset, n_points, ab, ab+1);
         }
 
-        // find furthest points
-        // TODO
+        // broadcast a and b
+        MPI_Bcast(ab, 2, MPI_LONG, 0, cur_comm);
+        long a = ab[0];
+        long b = ab[1];
+
+        printf("A: %ld, B: %ld\n", a, b);
 
         // split array across my current group (p/2^level processors)
         long buf_size = (long)ceil((float)n_points/(float)world_size);
-        int recv_buf[buf_size];
         // printf("[%d] size: %ld\n", rank, buf_size);
-        MPI_Scatter(wset, buf_size, MPI_INT, recv_buf, buf_size, MPI_INT, 0, cur_comm);
+        if(rank == 0) {
+            // Master
+            MPI_Scatter(wset, buf_size, MPI_LONG, MPI_IN_PLACE, buf_size, MPI_LONG, 0, cur_comm);
+        } else {
+            // Slave
+            MPI_Scatter(NULL, buf_size, MPI_LONG, wset, buf_size, MPI_LONG, 0, cur_comm);
+        }
 
         // We don't want to operate on data if
         // There is no data for us
@@ -101,29 +113,26 @@ int main(int argc, char*argv[]){
             if(rank == world_size - 1 && (n_points % world_size) != 0) {
                 buf_size = n_points % (buf_size);
             }
+
             // printf("[%d] size: %ld\n", rank, buf_size);
+            calc_orth_projs(wset, orthset, buf_size, a, b);
 
-            // calc orth projs/medians
+            // TODO: calc medians?
 
-            /*
             printf("[LEVEL %ld] [%d] got ", level, rank);
             int i;
             for(i = 0; i < buf_size - 1; i++) {
-                printf("%2d, ", recv_buf[i]);
+                printf("%2ld, ", wset[i]);
             }
-            printf("%2d\n", recv_buf[i]);
-            */
-
-            // TODO: remove
-            for(int i = 0; i < buf_size; i++) {
-                recv_buf[i] = recv_buf[i] * 2;
-            }
+            printf("%2ld\n", wset[i]);
         }
 
-        MPI_Gather(recv_buf, buf_size, MPI_INT, wset, buf_size, MPI_INT, 0, cur_comm);
-
-        // TODO: remove
-        MPI_Barrier(cur_comm);
+        // in-place gather
+        if(rank == 0) {
+            MPI_Gather(MPI_IN_PLACE, buf_size, MPI_DOUBLE, orthset, buf_size, MPI_DOUBLE, 0, cur_comm);
+        } else {
+            MPI_Gather(orthset, buf_size, MPI_DOUBLE, NULL, buf_size, MPI_DOUBLE, 0, cur_comm);
+        }
 
         if(rank == 0) {
             /*
@@ -137,6 +146,8 @@ int main(int argc, char*argv[]){
             // calculate median of medians
             // partition array
         }
+
+        return 0;
 
         // send new problem to new master (id + cur_world_size/2)
         int next_master = world_size / 2;
@@ -184,9 +195,9 @@ int main(int argc, char*argv[]){
     printf("[LEVEL %ld] [%d] will alone work on data (", level, global_rank);
     int i;
     for(i = 0; i < n_points - 1; i++) {
-        printf("%2d, ", wset[i]);
+        printf("%2ld, ", wset[i]);
     }
-    printf("%2d)\n", wset[i]);
+    printf("%2ld)\n", wset[i]);
 
     /*
     build_tree(n_points, wset, 0, tree, centers);
@@ -204,3 +215,42 @@ int main(int argc, char*argv[]){
     return 0;
 }
 
+void find_furthest_points(long* wset, long n_points, long*a, long* b) {
+    if(n_points == 2) {
+        *a = wset[0];
+        *b = wset[1];
+        return;
+    }
+
+    // find A: the most distant point from the first point in the set
+    long local_a = 0;
+    long local_b = 0;
+    double maximum = 0.0;
+    for(int i = 1; i < n_points; i++) {
+        double sd = squared_dist(N_DIMS, POINTS[wset[0]], POINTS[wset[i]]);
+        if(sd > maximum) {
+            local_a = wset[i];
+            maximum = sd;
+        }
+    }
+
+    maximum = 0.0;
+    for(int i = 0; i < n_points; i++) {
+        double sd = squared_dist(N_DIMS, POINTS[local_a], POINTS[wset[i]]);
+        if(sd < maximum) {  
+            local_b = wset[i];
+            maximum = sd;
+        }
+    }
+    
+    *a = local_a;
+    *b = local_b;
+}
+
+void calc_orth_projs(long* wset, double* orthset, long n_points, long a_idx, long b_idx) {
+    double* a = POINTS[a_idx];
+    double* b = POINTS[b_idx];
+    for(int i = 0; i < n_points; i++) {
+        orthset[i]= semi_orth_proj(N_DIMS, POINTS[wset[i]], a, b);
+    }
+}
