@@ -1,6 +1,7 @@
 #include <time.h>
 #include <mpi.h>
 
+#include "median-mpi.c"
 #include "gen_points.c"
 #include "common.h"
 
@@ -55,6 +56,10 @@ int main(int argc, char*argv[]) {
         printf("Allocation error\n");
         exit(4);
     }
+
+    // Initializing tree with -1 to identify written nodes
+    memset(tree, 0xff, sizeof(node_t) * n_nodes);
+
     for(int i = 0; i < n_nodes; i++) {
         centers[i] = &_centers[i*N_DIMS];
     }
@@ -117,7 +122,7 @@ int main(int argc, char*argv[]) {
             // printf("[%d] size: %ld\n", rank, buf_size);
             calc_orth_projs(wset, orthset, buf_size, a, b);
 
-            // TODO: calc medians?
+            // TODO: calc medians and send them to master?? NO >:(
 
             printf("[LEVEL %ld] [%d] got ", level, rank);
             int i;
@@ -143,7 +148,15 @@ int main(int argc, char*argv[]) {
             printf("%d)\n", wset[n_points-1]);
             */
 
-            // calculate median of medians
+            // calculate median
+            if(n_points&1) {
+                mdn_idx = n_points/2;
+                select_ith(wset, orthset, n_points, mdn_idx);
+                // TODO: calculate id
+                orth_proj(N_DIMS, POINTS[wset[mdn_idx]], POINTS[a], POINTS[b], centers[id]);
+            } else {
+                // TODO: ... just do it
+            }
             // partition array
         }
 
@@ -156,12 +169,10 @@ int main(int argc, char*argv[]) {
         if(rank == 0) {
             // send partition to next master
             MPI_Send(wset + n_left, n_right, MPI_INT, next_master, DELEGATE_MASTER, cur_comm);
-            n_points = n_left;
         }
         if(rank == next_master) {
             // receive partition from prev master
             MPI_Recv(wset, n_right, MPI_INT, 0, DELEGATE_MASTER, cur_comm, MPI_STATUS_IGNORE);
-            n_points = n_right;
         }
 
         n_points = (rank < next_master ? n_left : n_right);
