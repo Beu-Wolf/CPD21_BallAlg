@@ -1,7 +1,8 @@
 #include <time.h>
 #include <mpi.h>
+#include <string.h>
 
-#include "median-mpi.c"
+#include "median-mpi.h"
 #include "gen_points.c"
 #include "common.h"
 
@@ -49,6 +50,7 @@ int main(int argc, char*argv[]) {
     // TODO: we may overflow malloc argument. Check that with teachers
     // TODO: allocate in one big chunk
     long n_nodes = 2*n_points - 1;
+    long id = 0;
     node_t* tree = (node_t*)malloc(sizeof(node_t) * n_nodes);
     double* _centers = (double*)malloc(sizeof(double) * n_nodes * N_DIMS);
     double** centers = (double**)malloc(sizeof(double*) * n_nodes);
@@ -149,6 +151,7 @@ int main(int argc, char*argv[]) {
             */
 
             // calculate median
+            long mdn_idx;
             if(n_points&1) {
                 mdn_idx = n_points/2;
                 select_ith(wset, orthset, n_points, mdn_idx);
@@ -176,6 +179,7 @@ int main(int argc, char*argv[]) {
         }
 
         n_points = (rank < next_master ? n_left : n_right);
+        id = (rank < next_master ? id + 1: id + 2*n_left);
 
         if(rank == 0 || rank == next_master) {
             /*

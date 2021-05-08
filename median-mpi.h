@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#define RANDOM(len) (random() % len);
+#define RANDOM(len) (random() % len)
 
 #define SWAP(wset, orthset, idxa, idxb) { \
     long w = wset[idxa]; \
@@ -15,7 +15,7 @@
 }
 
 double pick_pivot(long* wset, double* orthset, long len);
-item_t select_ith(long* wset, double* orthset, long len, long ith);
+void select_ith(long* wset, double* orthset, long len, long ith);
 int partition(long* wset, double* orthset, long len, double ref);
 /*
 item_t median(item_t* vec, int len);
@@ -27,7 +27,7 @@ void print_vec(item_t* vec, int len);
 // returns idx of ith smallest element of vec (after scrambled)
 void select_ith(long* wset, double* orthset, long len, long ith) {
     // printf("Looking for %dth smallest number\n", ith+1); // ith starts in 0
-    if(len == 1) return vec[0];
+    if(len == 1) return;
 
     if(len == 2) {
         if(orthset[0] > orthset[1]) { // sort if unsorted
@@ -39,16 +39,18 @@ void select_ith(long* wset, double* orthset, long len, long ith) {
     int idx = 0;
 
     double pivot = pick_pivot(wset, orthset, len);
-    idx = partition(wset, orthset, len, pivot.sop);
+    idx = partition(wset, orthset, len, pivot);
 
     if(ith == idx) {
-        return ith;
+        return;
     } else if(ith < idx) {
         // printf("Searching in left\n");
-        return select_ith(wset, orthset, idx, ith);
+        select_ith(wset, orthset, idx, ith);
+        return;
     } else {
         // printf("Searching in right\n");
-        return select_ith(wset+idx, orthset+idx, len-idx, ith-idx);
+        select_ith(wset+idx, orthset+idx, len-idx, ith-idx);
+        return;
     }
 }
 
