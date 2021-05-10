@@ -14,9 +14,9 @@
     orthset[idxb] = o; \
 }
 
-double pick_pivot(long* wset, double* orthset, long len);
-void select_ith(long* wset, double* orthset, long len, long ith);
-int partition(long* wset, double* orthset, long len, double ref);
+double mpi_pick_pivot(long* wset, double* orthset, long len);
+void mpi_select_ith(long* wset, double* orthset, long len, long ith);
+int mpi_partition(long* wset, double* orthset, long len, double ref);
 /*
 item_t median(item_t* vec, int len);
 int cmp_item(const void* _a, const void* _b);
@@ -25,7 +25,7 @@ void print_vec(item_t* vec, int len);
 */
 
 // returns idx of ith smallest element of vec (after scrambled)
-void select_ith(long* wset, double* orthset, long len, long ith) {
+void mpi_select_ith(long* wset, double* orthset, long len, long ith) {
     // printf("Looking for %dth smallest number\n", ith+1); // ith starts in 0
     if(len == 1) return;
 
@@ -38,23 +38,23 @@ void select_ith(long* wset, double* orthset, long len, long ith) {
 
     int idx = 0;
 
-    double pivot = pick_pivot(wset, orthset, len);
-    idx = partition(wset, orthset, len, pivot);
+    double pivot = mpi_pick_pivot(wset, orthset, len);
+    idx = mpi_partition(wset, orthset, len, pivot);
 
     if(ith == idx) {
         return;
     } else if(ith < idx) {
         // printf("Searching in left\n");
-        select_ith(wset, orthset, idx, ith);
+        mpi_select_ith(wset, orthset, idx, ith);
         return;
     } else {
         // printf("Searching in right\n");
-        select_ith(wset+idx, orthset+idx, len-idx, ith-idx);
+        mpi_select_ith(wset+idx, orthset+idx, len-idx, ith-idx);
         return;
     }
 }
 
-double pick_pivot(long* wset, double* orthset, long len) {
+double mpi_pick_pivot(long* wset, double* orthset, long len) {
     // randomized
     return orthset[(long)(RANDOM(len))];
     /*
@@ -76,7 +76,7 @@ double pick_pivot(long* wset, double* orthset, long len) {
 }
 
 // returns first index of second partition
-int partition(long* wset, double* orthset, long len, double ref) {
+int mpi_partition(long* wset, double* orthset, long len, double ref) {
     int i = -1;
     int j = len;
 
