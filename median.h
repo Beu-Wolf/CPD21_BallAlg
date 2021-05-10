@@ -14,7 +14,7 @@ item_t median(item_t* vec, int len);
 item_t select_ith(item_t* vec, int len, int i);
 int partition(item_t* vec, int len, double ref);
 
-void print_vec(item_t* vec, int len);
+// void print_vec(item_t* vec, int len);
 
 // returns ith smallest element of vec
 item_t select_ith(item_t* vec, int len, int ith) {
@@ -130,6 +130,7 @@ int partition(item_t* vec, int len, double ref) {
     return i;
 }
 
+/*
 void print_vec(item_t* vec, int len) {
     printf("[");
     int i;
@@ -138,4 +139,5 @@ void print_vec(item_t* vec, int len) {
     }
     printf("%f]\n", vec[i].sop);
 }
+*/
 
