@@ -15,6 +15,11 @@ typedef struct _node {
     long right;
 } node_t;
 
+typedef struct {
+    double max;
+    int index;
+} max_struct_t;
+
 void build_tree(int n_points, sop_t* wset, long id, node_t* tree, double** centers);
 void dump_tree(node_t* tree, double** centers, long len);
 void print_point(double* point, int dims);

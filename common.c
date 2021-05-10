@@ -3,11 +3,6 @@
 int N_DIMS;
 double** POINTS;
 
-typedef struct {
-    double max;
-    int index;
-} max_struct_t;
-
 max_struct_t max_with_index(max_struct_t r, max_struct_t n) {
     max_struct_t a;
     if (r.max > n.max) {
@@ -17,8 +12,6 @@ max_struct_t max_with_index(max_struct_t r, max_struct_t n) {
     }
     return a;
 }
-
-
 
 void dump_tree(node_t* tree, double** centers, long len) {
     printf("%d %ld\n", N_DIMS, len);
