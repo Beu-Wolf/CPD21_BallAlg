@@ -9,18 +9,12 @@ MAIN_PARALLEL_C=ballAlg_omp.c
 SERIAL_C=${SERIAL}.c
 SERIAL_OUT=${SERIAL}
 
-SERIAL_REC_OUT=ballAlg_serial_rec
-SERIAL_ITR_OUT=ballAlg_serial_itr
-PARALL_REC_OUT=ballAlg_parall_rec
-PARALL_ITR_OUT=ballAlg_parall_itr
-
-
-all: serial-rec serial-itr parall-rec parall-itr
+all: serial mpi 
 
 serial: ballAlg.c vectors.c common.c build_tree_rec.c
-	gcc -DSERIAL ${EXTRA} $^ -o ${SERIAL_REC_OUT} ${FLAGS} 
+	gcc -DSERIAL ${EXTRA} $^ -o ballAlg ${FLAGS} 
 
-mpi: ballAlg-mpi.c common.c vectors.c
+mpi: ballAlg-mpi.c common.c vectors.c build_tree_rec.c
 	mpicc $^ -o ballAlg-mpi -lm
 
 profile: EXTRA= -pg
@@ -35,10 +29,10 @@ bench: all
 
 
 query: ballQuery.c
-	gcc -O3 -lm ${QUERY_C} -o ${QUERY_OUT}
+	gcc -O3 -lm ballQuery.c -o ballQuery
 
 
 
 .PHONY: clean-serial
 clean:
-	rm -f ${SERIAL_REC_OUT} ${SERIAL_ITR_OUT} ${PARALL_REC_OUT} ${PARALL_ITR_OUT}
+	rm -f ballAlg ballAlg-mpi
