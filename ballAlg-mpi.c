@@ -354,7 +354,7 @@ void mpi_calc_orth_projs(long* wset, double* orthset, long n_points, long a_idx,
 void print_vec(double* vec, int len) {
     int i;
     for(i = 0; i < len-1; i++) {
-        printf(" %f", vec[i]);
+        printf(" %.6f", vec[i]);
     }
-    printf(" %f\n", vec[i]);
+    printf(" %.6f\n", vec[i]);
 }
