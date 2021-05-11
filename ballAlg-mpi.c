@@ -79,9 +79,9 @@ int main(int argc, char*argv[]) {
     long level = 0;
     while(level < max_levels && n_procs > (1 << level)) {
 
-        int world_size;
+        int comm_size;
         long ab[2];
-        MPI_Comm_size(cur_comm, &world_size);
+        MPI_Comm_size(cur_comm, &comm_size);
 
         // TODO: ???? if(free nodes available):
 
@@ -95,7 +95,7 @@ int main(int argc, char*argv[]) {
         long b = ab[1];
 
         // split array across my current group (p/2^level processors)
-        long buf_size = (long)ceil((float)n_points/(float)world_size);
+        long buf_size = (long)ceil((float)n_points/(float)comm_size);
         // printf("[%d] size: %ld\n", rank, buf_size);
 
         long* local_wset;
@@ -106,26 +106,25 @@ int main(int argc, char*argv[]) {
         } else { // Slave
             local_wset = wset;
         }
-
+        // printf("hello from %d\n", global_rank);
         MPI_Scatter(wset, buf_size, MPI_LONG, local_wset, buf_size, MPI_LONG, 0, cur_comm);
 
 
         // We don't want to operate on data if
         // There is no data for us
-        if(rank < n_points) {
-            if(rank == world_size - 1 && (n_points % world_size) != 0) {
-                buf_size = n_points % (buf_size);
-            }
+        if(n_points - (rank*buf_size) > 0) {
+            // rank*buf_size = the number of points attributed to the nodes
+            // with a smaller rank
+            buf_size = MIN(buf_size, n_points - rank*buf_size);
+            //printf("goodbye from %d with bufsize: %ld\n", global_rank, buf_size);
 
-            /*
-            if(id == 1) {
-                printf("%d is calculating orth projs of", global_rank);
-                for(long i = 0; i < buf_size; i++) {
-                    printf(" %ld", local_wset[i]);
-                }
-                printf("\n");
-            }
-            */
+            // if(id == 1) {
+            //     printf("%d is calculating orth projs of", global_rank);
+            //     for(long i = 0; i < buf_size; i++) {
+            //         printf(" %ld", local_wset[i]);
+            //     }
+            //     printf("\n");
+            // }
 
             // printf("[%d] size: %ld\n", rank, buf_size);
             mpi_calc_orth_projs(local_wset, orthset, buf_size, a, b);
@@ -140,15 +139,33 @@ int main(int argc, char*argv[]) {
             }
             printf("%2ld\n", local_wset[i]);
             */
+        } else {
+            buf_size = 0;
         }
 
+        int recvcounts[comm_size];
+        int displs[comm_size];
+        int count = 0;
+        int remainder;
+        if (rank == 0) {
+            for (int i = 0; i < comm_size; i++) {
+                remainder = n_points - (i*buf_size);
+                if (remainder > 0) {
+                    recvcounts[i] = MIN(buf_size, remainder);
+                } else {
+                    recvcounts[i] = 0;
+                }
+                displs[i] = count;
+                count += recvcounts[i];
+            }
+        }
         // in-place gather
         if(rank == 0) {
-            MPI_Gather(MPI_IN_PLACE, buf_size, MPI_DOUBLE, orthset, buf_size, MPI_DOUBLE, 0, cur_comm);
+            MPI_Gatherv(MPI_IN_PLACE, buf_size, MPI_DOUBLE, orthset, recvcounts, displs, MPI_DOUBLE, 0, cur_comm);
         } else {
-            MPI_Gather(orthset, buf_size, MPI_DOUBLE, NULL, buf_size, MPI_DOUBLE, 0, cur_comm);
+            MPI_Gatherv(orthset, buf_size, MPI_DOUBLE, orthset, NULL, NULL, MPI_DOUBLE, 0, cur_comm);
         }
-
+        // printf("After gather: %d", global_rank);
 
         if(rank == 0) {
             // printf("[LEVEL %ld] master %d is partitioning array ", level, rank);
@@ -234,8 +251,8 @@ int main(int argc, char*argv[]) {
             free(local_wset);
         }
 
-        // send new problem to new master (id + cur_world_size/2)
-        int next_master = world_size / 2;
+        // send new problem to new master (id + comm_size/2)
+        int next_master = comm_size / 2;
         if(rank == 0) {
             // send partition to next master
             MPI_Send(wset + n_left, n_right, MPI_LONG, next_master, DELEGATE_MASTER, cur_comm);
@@ -248,18 +265,16 @@ int main(int argc, char*argv[]) {
         n_points = (rank < next_master ? n_left : n_right);
         id = (rank < next_master ? id + 1: id + 2*n_left);
 
-        if(rank == 0 || rank == next_master) {
-            /*
-            printf("[LEVEL %ld] %d will work on data: (", level + 1, rank);
-            for(int i = 0; i < n_points - 1; i++) {
-                printf("%d, ", wset[i]);
-            }
-            printf("%d)\n", wset[n_points - 1]);
-            */
-        }
+        // if(rank == 0 || rank == next_master) {
+        //     printf("[LEVEL %ld] %d will work on data: (", level + 1, rank);
+        //     for(int i = 0; i < n_points - 1; i++) {
+        //         printf("%ld, ", wset[i]);
+        //     }
+        //     printf("%ld)\n", wset[n_points - 1]);
+        // }
 
         // Split current comm in two
-        int color = rank / (world_size/2);
+        int color = rank / (comm_size/2);
         MPI_Comm new_comm;
         MPI_Comm_split(cur_comm, color, rank, &new_comm);
         // MPI_Comm_free(&cur_comm);

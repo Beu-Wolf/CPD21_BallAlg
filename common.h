@@ -7,6 +7,9 @@
 #include "vectors.h"
 #include "sop.h"
 
+#define MIN(x, y) (x > y ? y : x)
+#define MAX(x, y) (x > y ? x : y)
+
 typedef struct _node {
     int id;
     double radius;
