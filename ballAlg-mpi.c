@@ -69,7 +69,7 @@ int main(int argc, char*argv[]) {
 
     // Dump tree pt 1: Print tree dimensions
     if(global_rank == 0) {
-        printf("%d %ld\n", N_DIMS, n_points);
+        printf("%d %ld\n", N_DIMS, 2*n_points - 1);
     }
 
     // Calculate max levels
