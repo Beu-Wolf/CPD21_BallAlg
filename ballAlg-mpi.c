@@ -307,13 +307,18 @@ int main(int argc, char*argv[]) {
     exec_time += MPI_Wtime();
 
 #ifndef SKIP_DUMP
-    for(long i = 0; i < n_nodes; i++) {
-        if(tree[i].id != -1) {
-            node_t* node = tree + i;
-            printf("%d %ld %ld %.6f",
-                node->id, node->left, node->right, sqrt(node->radius));
-            print_vec(node->center, N_DIMS);
+    for (long r = 0; r < n_procs; r++) {
+        if (global_rank == r) {
+            for (long i = 0; i < n_nodes; i++) {
+                if(tree[i].id != -1) {
+                    node_t* node = tree + i;
+                    printf("%d %ld %ld %.6f",
+                        node->id, node->left, node->right, sqrt(node->radius));
+                    print_vec(node->center, N_DIMS);
+                }
+            }
         }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 #endif
 
