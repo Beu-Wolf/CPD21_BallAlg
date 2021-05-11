@@ -3,8 +3,8 @@
 #include "gen_points.c"
 #include "common.h"
 
-int N_DIMS;
-double** POINTS;
+extern int N_DIMS;
+extern double** POINTS;
 
 void find_furthest_points(sop_t* wset, long n_points, long* a, long* b);
 
