@@ -15,7 +15,7 @@ serial: ballAlg.c vectors.c common.c build_tree_rec.c
 	gcc -DSERIAL ${EXTRA} $^ -o ballAlg ${FLAGS} 
 
 mpi: ballAlg-mpi.c common.c vectors.c build_tree_rec.c
-	mpicc $^ -o ballAlg-mpi -lm
+	mpicc $^ -o ballAlg-mpi ${FLAGS}
 
 profile: EXTRA= -pg
 profile: all
@@ -29,7 +29,7 @@ bench: all
 
 
 query: ballQuery.c
-	gcc -O3 -lm ballQuery.c -o ballQuery
+	gcc -O3 ballQuery.c -o ballQuery -lm
 
 
 
