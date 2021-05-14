@@ -167,33 +167,19 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
 
         // Step 3: Sort global array
         // 3.1: Sort local array
-        for(int p = 0; p < comm_size; p++) {
-            if(p == rank) {
-                for(long i = 0; i < local_n_points; i++) {
-                    printf("[%d] %.6f\n", rank, orthset[i]);
-                }
-            }
-            fflush(stdout);
-            MPI_Barrier(cur_comm);
-        }
-        if(rank == 0) printf("=======================================\n");
-        if(rank == 0 || 1) {
-            mpi_quicksort(POINTS[0], orthset, N_DIMS, local_n_points);
-        } 
-        for(int p = 0; p < comm_size; p++) {
-            if(p == rank) {
-                for(long i = 0; i < local_n_points; i++) {
-                    printf("[%d] %.6f\n", rank, orthset[i]);
-                }
-            }
-            fflush(stdout);
-            MPI_Barrier(cur_comm);
-        }
-        if(rank == 0) printf("=======================================\n");
+
+        mpi_quicksort(POINTS[0], orthset, N_DIMS, local_n_points);
 
         // 3.2: OET
         for(int phase = 0; phase < comm_size; phase++) {
             int peer = rank;
+
+            if (rank == 0) {
+                printf("PHASE: %d\n", phase);
+                fflush(stdout);
+            }
+
+            MPI_Barrier(cur_comm);
 
             //              phase%2 = 0 | phase%2 = 1
             // rank%2 = 0       ++      |     --
@@ -218,7 +204,6 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                     MPI_Send(POINTS[0], local_n_points * N_DIMS, MPI_DOUBLE, peer, OET_POINTS, cur_comm);
                     MPI_Recv(peer_points, peer_block_size * N_DIMS, MPI_DOUBLE, peer, OET_POINTS, cur_comm, NULL);
 
-
                     MPI_Send(orthset, local_n_points, MPI_DOUBLE, peer, OET_ORTHS, cur_comm);
                     MPI_Recv(peer_orth, peer_block_size, MPI_DOUBLE, peer, OET_ORTHS, cur_comm, NULL);
                 } else { // these nodes receive first
@@ -235,7 +220,7 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                 if(rank < peer) {
                     long my_idx = 0, peer_idx = 0;
                     for(long k = 0; k < local_n_points; k++) {
-                        if(peer_orth[peer_idx] < orthset[my_idx]) {
+                        if(peer_orth[peer_idx] < orthset[my_idx] && peer_idx < peer_block_size) {
                             memcpy(POINTS[k], peer_points + (peer_idx * N_DIMS), sizeof(double) * N_DIMS);
                             SWAPPIE_SWAPPIE_ORTH[k] = peer_orth[peer_idx];
                             peer_idx++;
@@ -248,7 +233,7 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                 } else {
                     long my_idx = local_n_points - 1, peer_idx = peer_block_size - 1;
                     for(long k = local_n_points - 1; k >= 0; k--) {
-                        if(peer_orth[peer_idx] > orthset[my_idx]) {
+                        if(peer_orth[peer_idx] > orthset[my_idx] && peer_idx >= 0) {
                             memcpy(POINTS[k], peer_points + (peer_idx * N_DIMS), sizeof(double) * N_DIMS);
                             SWAPPIE_SWAPPIE_ORTH[k] = peer_orth[peer_idx];
                             peer_idx--;
@@ -267,8 +252,14 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                 free(peer_points);
                 free(peer_orth);
             }
+
+            // printf("I (%d) lived!\n", rank);
+            
         }
-        // printf("I (%d) lived!\n", rank);
+
+        MPI_Barrier(cur_comm);
+
+
         for(int p = 0; p < comm_size; p++) {
             if(p == rank) {
                 for(long i = 0; i < local_n_points; i++) {
@@ -278,7 +269,6 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
             fflush(stdout);
             MPI_Barrier(cur_comm);
         }
-
         break;
 
     }
