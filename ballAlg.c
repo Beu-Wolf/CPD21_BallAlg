@@ -13,7 +13,8 @@ int main(int argc, char*argv[]){
     long n_points;
 
     double exec_time = -time(NULL);
-    POINTS = get_points(argc, argv, &N_DIMS, &n_points);
+    char useless;
+    POINTS = get_points(argc, argv, 0, 1, &N_DIMS, &n_points, &useless);
 
     sop_t* wset = (sop_t*)malloc(sizeof(sop_t) * n_points);
     for(long i = 0; i < n_points; i++) {

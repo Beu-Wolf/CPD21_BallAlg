@@ -5,13 +5,10 @@
 
 #define RANDOM(len) (random() % len)
 
-#define SWAP(wset, orthset, idxa, idxb) { \
-    long w = wset[idxa]; \
-    wset[idxa] = wset[idxb]; \
-    wset[idxb] = w; \
-    double o = orthset[idxa]; \
-    orthset[idxa] = orthset[idxb]; \
-    orthset[idxb] = o; \
+#define SWAP(type, a, b) { \
+    type tmp = a; \
+    a = b; \
+    b = tmp; \
 }
 
 double mpi_pick_pivot(long* wset, double* orthset, long len);
@@ -31,7 +28,8 @@ void mpi_select_ith(long* wset, double* orthset, long len, long ith) {
 
     if(len == 2) {
         if(orthset[0] > orthset[1]) { // sort if unsorted
-            SWAP(wset, orthset, 0, 1);
+            SWAP(long, wset[0], wset[1]);
+            SWAP(double, orthset[0], orthset[1]);
         }
         return;
     }
@@ -91,9 +89,49 @@ int mpi_partition(long* wset, double* orthset, long len, double ref) {
         if(i >= j) break;
         // printf("swap %d %d\n", i, j);
         // does this copy the entire structure?
-        SWAP(wset, orthset, i, j);
+        SWAP(long, wset[i], wset[j]);
+        SWAP(double, orthset[i], orthset[j]);
     }
     return i;
+}
+
+// returns index of pivot
+int mpi_qs_partition(double* points, double* orthset, int n_dims, long n_points, double ref) {
+    int i = -1;
+    int j = n_points;
+
+    // printf("partitioning with pivot %.6f\n", ref);
+
+    double* aux = (double*)malloc(sizeof(double) * n_dims);
+    if(!aux) exit(-1);
+
+    while(i < j) {
+        while(i < j && orthset[++i] < ref) {
+            if (i >= n_points) break;
+            // printf("accessing i %d\n", i);
+        }
+        while(j > i && orthset[--j] > ref) {
+            // printf("accessing j %d\n", j);
+        }
+        // printf("swap %d %d\n", i, j);
+        // does this copy the entire structure?
+        memcpy(aux, &points[i * n_dims], sizeof(double)*n_dims);
+        memcpy(&points[i * n_dims], &points[j * n_dims], sizeof(double)*n_dims);
+        memcpy(&points[j * n_dims], aux, sizeof(double)*n_dims);
+        SWAP(double, orthset[i], orthset[j]);
+        // printf("swapping %d and %d\n", i, j);
+
+        if(i >= j) break;
+    }
+    return i;
+}
+
+void mpi_quicksort(double* points, double* orthset, int n_dims, long n_points) {
+    if(n_points <= 1) return;
+
+    long i = mpi_qs_partition(points, orthset, n_dims, n_points, orthset[(long)RANDOM(n_points)]);
+    mpi_quicksort(points, orthset, n_dims, i);
+    mpi_quicksort(&points[(i+1)*n_dims], &orthset[i + 1], n_dims, n_points - i - 1);
 }
 
 /*

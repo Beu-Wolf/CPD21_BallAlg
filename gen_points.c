@@ -2,6 +2,13 @@
 #include <stdlib.h>
 
 #define RANGE 10
+#define _1GB 134217728
+
+#define BLOCK_LOW(id,p,n) ((id)*(n)/(p))
+#define BLOCK_HIGH(id,p,n) (BLOCK_LOW((id)+1,p,n) - 1)
+#define BLOCK_SIZE(id,p,n) (BLOCK_HIGH(id,p,n) - BLOCK_LOW(id,p,n) + 1)
+#define BLOCK_OWNER(index,p,n) (((p)*((index)+1)-1)/(n)) 
+
 
 extern void print_point(double *, int);
 
@@ -24,12 +31,14 @@ double **create_array_pts(int n_dims, long np)
 }
 
 
-double **get_points(int argc, char *argv[], int *n_dims, long *np)
+double **get_points(int argc, char *argv[], int world_rank, int world_size, int *n_dims, long *np, char* is_big)
 {
     double **pt_arr;
     unsigned seed;
     long i;
     int j;
+
+    long requested_np;
 
     if(argc != 4){
         printf("Usage: %s <n_dims> <n_points> <seed>\n", argv[0]);
@@ -51,11 +60,30 @@ double **get_points(int argc, char *argv[], int *n_dims, long *np)
     seed = atoi(argv[3]);
     srandom(seed);
 
-    pt_arr = (double **) create_array_pts(*n_dims, *np);
+    // *is_big = (*np) * (*n_dims) > _1GB;
+    *is_big = 1;
 
-    for(i = 0; i < *np; i++)
-        for(j = 0; j < *n_dims; j++)
-            pt_arr[i][j] = RANGE * ((double) random()) / RAND_MAX;
+    if(*is_big) {
+        // Big version: processes have different points
+        long blockSize = BLOCK_SIZE(world_rank, world_size, *np);
+        // printf("process %d: bsize: %ld, blow: %ld\n", world_rank, blockSize, BLOCK_LOW(world_rank, world_size, *np));
+        pt_arr = (double **) create_array_pts(*n_dims, blockSize);
+        for(i = 0; i < BLOCK_LOW(world_rank, world_size, *np); i++)
+            for(j = 0; j < *n_dims; j++)
+                // discard other processes' points
+                random();
+
+        for(i = 0; i < BLOCK_SIZE(world_rank, world_size, *np); i++)
+            for(j = 0; j < *n_dims; j++)
+                pt_arr[i][j] = RANGE * ((double) random()) / RAND_MAX;
+    } else {
+        // Small version: every process has every point
+        pt_arr = (double **) create_array_pts(*n_dims, *np);
+        for(i = 0; i < *np; i++)
+            for(j = 0; j < *n_dims; j++)
+                pt_arr[i][j] = RANGE * ((double) random()) / RAND_MAX;
+
+    }
 
 #ifdef DEBUG
     for(i = 0; i < *np; i++)
