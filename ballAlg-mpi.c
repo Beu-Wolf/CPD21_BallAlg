@@ -1,14 +1,17 @@
 #include <time.h>
 #include <mpi.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "median-mpi.h"
 #include "common.h"
 #include "gen_points.c"
 
 #define DELEGATE_MASTER 1
-#define OET_POINTS 2
-#define OET_ORTHS 3
+#define OET_POINTS_1 2
+#define OET_POINTS_2 3
+#define OET_ORTHS_1 4
+#define OET_ORTHS_2 5
 
 int solve_small(int n_procs, int global_rank, double exec_time, long n_points);
 
@@ -24,12 +27,13 @@ MPI_Op REDUCE_MAX_DISTANCE;
 
 extern int N_DIMS;
 extern double** POINTS;
-double** SWAPPIE_SWAPPIE;
+double* SWAPPIE_SWAPPIE;
 double* SWAPPIE_SWAPPIE_ORTH;
 
 double* global_aux;
 
 int main(int argc, char*argv[]) {
+
     // Initialize MPI
     MPI_Init(&argc, &argv);
 
@@ -56,6 +60,9 @@ int main(int argc, char*argv[]) {
     } else {
         solve_small(n_procs, global_rank, exec_time, n_points);
     }
+
+    //free(global_aux);
+    return 0;
 }
 
 void reduce_max_distance(void *in, void *inout, int *len, MPI_Datatype *dptr) {
@@ -64,25 +71,24 @@ void reduce_max_distance(void *in, void *inout, int *len, MPI_Datatype *dptr) {
     if(sqdst1 > sqdst2) {
         vec_copy(*len, in, inout);
     }
+    
 }
 
 int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
 
-
     int rank = global_rank;
     MPI_Comm cur_comm = MPI_COMM_WORLD;
-
 
     long _n_nodes = 2*_n_points - 1;
 
     long local_n_points = BLOCK_SIZE(rank, n_procs, _n_points);
     long local_n_nodes = local_n_points + n_procs;
 
-    SWAPPIE_SWAPPIE = (double**)malloc(sizeof(double) * N_DIMS * local_n_points);
+    SWAPPIE_SWAPPIE = (double*)malloc(sizeof(double) * N_DIMS * local_n_points);
     SWAPPIE_SWAPPIE_ORTH = (double*)malloc(sizeof(double) * local_n_points);
 
     // orthset: stores orthogonal projections
-    double* orthset = (double*)malloc(sizeof(double) * BLOCK_SIZE(rank, n_procs, local_n_points));
+    double* orthset = (double*)malloc(sizeof(double) * BLOCK_SIZE(rank, n_procs, _n_points));
 
     global_aux = (double*)malloc(sizeof(double) * N_DIMS);
 
@@ -143,6 +149,7 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
         // print_vec(global_aux, N_DIMS);
 
         // 1.3 Find global a
+
         MPI_Allreduce(POINTS[max_idx], a, N_DIMS, MPI_DOUBLE, REDUCE_MAX_DISTANCE, cur_comm);
 
         // 1.4 Find local b
@@ -174,13 +181,6 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
         for(int phase = 0; phase < comm_size; phase++) {
             int peer = rank;
 
-            if (rank == 0) {
-                printf("PHASE: %d\n", phase);
-                fflush(stdout);
-            }
-
-            MPI_Barrier(cur_comm);
-
             //              phase%2 = 0 | phase%2 = 1
             // rank%2 = 0       ++      |     --
             // rank%2 = 1       --      |     ++
@@ -195,24 +195,46 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
 
             if(peer >= 0 && peer < comm_size) {
                 // 3.2.1: Send my data to my peer
+                //printf("BEFORE MALOC: [%d] phase %d\n", rank, phase);
                 long peer_block_size = BLOCK_SIZE(peer, n_procs, _n_points);
+
                 double* peer_points = (double*)malloc(sizeof(double) * N_DIMS * peer_block_size);
                 double* peer_orth = (double*)malloc(sizeof(double) * peer_block_size);
 
-                if(rank % 2) { // these nodes send first
+                
+                if(rank % 2 == 0) { // these nodes send first
                     // HACK: POINTS[0] points to the beginning of the point buffer
-                    MPI_Send(POINTS[0], local_n_points * N_DIMS, MPI_DOUBLE, peer, OET_POINTS, cur_comm);
-                    MPI_Recv(peer_points, peer_block_size * N_DIMS, MPI_DOUBLE, peer, OET_POINTS, cur_comm, NULL);
+                    /*if (rank == 2) {
+                        printf("Sending: \n");
+                        for(int i = 0; i < local_n_points*N_DIMS; i++) {
+                            printf("POINT: %f\n", POINTS[0][i]);
+                        }
+                        fflush(stdout);
+                    }*/
+                    
+                    //printf("BEFORE: [%d] phase %d peer %d buff %ld \n", rank, phase, peer, local_n_points * N_DIMS);
+                    MPI_Send(POINTS[0], local_n_points * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_1, cur_comm);
+                    //printf("AFTER: [%d] phase %d\n", rank, phase);
+                    
+                    
+                    MPI_Recv(peer_points, peer_block_size * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_2, cur_comm, NULL);
 
-                    MPI_Send(orthset, local_n_points, MPI_DOUBLE, peer, OET_ORTHS, cur_comm);
-                    MPI_Recv(peer_orth, peer_block_size, MPI_DOUBLE, peer, OET_ORTHS, cur_comm, NULL);
+                    MPI_Send(orthset, local_n_points, MPI_DOUBLE, peer, OET_ORTHS_1, cur_comm);
+                    MPI_Recv(peer_orth, peer_block_size, MPI_DOUBLE, peer, OET_ORTHS_2, cur_comm, NULL);
                 } else { // these nodes receive first
-                    MPI_Recv(peer_points, peer_block_size * N_DIMS, MPI_DOUBLE, peer, OET_POINTS, cur_comm, NULL);
-                    MPI_Send(POINTS[0], local_n_points * N_DIMS, MPI_DOUBLE, peer, OET_POINTS, cur_comm);
 
-                    MPI_Recv(peer_orth, peer_block_size, MPI_DOUBLE, peer, OET_ORTHS, cur_comm, NULL);
-                    MPI_Send(orthset, local_n_points, MPI_DOUBLE, peer, OET_ORTHS, cur_comm);
+                    //printf("BEFORE: [%d] phase %d peer %d buff %ld\n", rank, phase, peer, peer_block_size*N_DIMS);
+                    MPI_Recv(peer_points, peer_block_size * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_1, cur_comm, NULL);
+                    //printf("AFTER: [%d] phase %d\n", rank, phase);
+                    
+                    
+                    MPI_Send(POINTS[0], local_n_points * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_2, cur_comm);
+
+                    MPI_Recv(peer_orth, peer_block_size, MPI_DOUBLE, peer, OET_ORTHS_1, cur_comm, NULL);
+                    MPI_Send(orthset, local_n_points, MPI_DOUBLE, peer, OET_ORTHS_2, cur_comm);
                 }
+
+
 
                 // 3.2.2: Merge-sort arrays
                 // Copy local points to swappie swappie
@@ -234,10 +256,12 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                     long my_idx = local_n_points - 1, peer_idx = peer_block_size - 1;
                     for(long k = local_n_points - 1; k >= 0; k--) {
                         if(peer_orth[peer_idx] > orthset[my_idx] && peer_idx >= 0) {
+                            //vec_copy(N_DIMS, peer_points + (peer_idx * N_DIMS), POINTS[k]);
                             memcpy(POINTS[k], peer_points + (peer_idx * N_DIMS), sizeof(double) * N_DIMS);
                             SWAPPIE_SWAPPIE_ORTH[k] = peer_orth[peer_idx];
                             peer_idx--;
                         } else {
+                            //vec_copy(N_DIMS, SWAPPIE_SWAPPIE[my_idx * N_DIMS]), POINTS[k]);
                             memcpy(POINTS[k], SWAPPIE_SWAPPIE + (my_idx * N_DIMS), sizeof(double) * N_DIMS);
                             SWAPPIE_SWAPPIE_ORTH[k] = orthset[my_idx];
                             my_idx--;
@@ -246,16 +270,22 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                 }
                 // do the swappie swappie
                 double* tmp = orthset;
+                //vec_copy(local_n_points, SWAPPIE_SWAPPIE_ORTH, orthset);
                 orthset = SWAPPIE_SWAPPIE_ORTH;
+                vec_copy(local_n_points, SWAPPIE_SWAPPIE_ORTH, tmp);
                 SWAPPIE_SWAPPIE_ORTH = tmp;
 
                 free(peer_points);
                 free(peer_orth);
             }
 
+
+            MPI_Barrier(cur_comm);
+
             // printf("I (%d) lived!\n", rank);
             
         }
+
 
         MPI_Barrier(cur_comm);
 
@@ -272,6 +302,12 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
         break;
 
     }
+
+    /*free(SWAPPIE_SWAPPIE);
+    free(SWAPPIE_SWAPPIE_ORTH);
+    free(orthset);
+    free(global_aux);*/
+
 
     MPI_Finalize();
     return 0;
@@ -561,6 +597,7 @@ int solve_small(int n_procs, int global_rank, double exec_time, long n_points) {
     }
 
     // TODO: return value?
+
     MPI_Finalize();
     return 0;
 }

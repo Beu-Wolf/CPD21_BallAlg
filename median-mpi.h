@@ -121,6 +121,8 @@ int mpi_qs_partition(double* points, double* orthset, int n_dims, long low, long
     memcpy(&points[i * n_dims], &points[high], sizeof(double)*n_dims);
     memcpy(&points[high], aux, sizeof(double)*n_dims);
     SWAP(double, orthset[i], orthset[high]);
+
+    free(aux);
    
     return i;
 }
