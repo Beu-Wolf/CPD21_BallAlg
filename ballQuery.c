@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
          node_idx,
          n_nodes;
     int d;
+    int _;
 
     if(argc < 3){
         printf("Usage: %s <ball-tree-file> <point>\n", argv[0]);
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    fscanf(fp, "%d %ld", &n_dims, &n_nodes);
+    _ = fscanf(fp, "%d %ld", &n_dims, &n_nodes);
     if(n_dims < 2){
         printf("Illegal number of dimensions (%d), must be above 1.\n", n_dims);
         exit(3);
@@ -106,11 +107,11 @@ int main(int argc, char *argv[])
 
     allocate_tree(n_nodes);
     for(i = 0; i < n_nodes; i++){        
-        fscanf(fp, "%ld", &node_idx);
+        _ = fscanf(fp, "%ld", &node_idx);
         node = &(tree[node_idx]);
-        fscanf(fp, "%ld %ld %lf", &(node->L), &(node->R), &(node->radius));
+        _ = fscanf(fp, "%ld %ld %lf", &(node->L), &(node->R), &(node->radius));
         for(d = 0; d < n_dims; d++)
-            fscanf(fp, "%lf", &(center[node_idx][d]));
+            _ = fscanf(fp, "%lf", &(center[node_idx][d]));
     }
 
     // tree and point are global, index 0 is root; currBest has result
