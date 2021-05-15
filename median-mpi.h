@@ -101,8 +101,7 @@ int mpi_qs_partition(double* points, double* orthset, int n_dims, long low, long
 
     // printf("partitioning with pivot %.6f\n", ref);
 
-    double* aux = (double*)malloc(sizeof(double) * n_dims);
-    if(!aux) exit(-1);
+    double aux[n_dims];
 
     int i = low-1;
 
@@ -117,12 +116,11 @@ int mpi_qs_partition(double* points, double* orthset, int n_dims, long low, long
     }
 
     i++;
-    memcpy(aux, &points[i * n_dims], sizeof(double)*n_dims);
-    memcpy(&points[i * n_dims], &points[high], sizeof(double)*n_dims);
-    memcpy(&points[high], aux, sizeof(double)*n_dims);
     SWAP(double, orthset[i], orthset[high]);
-
-    free(aux);
+    
+    memcpy(aux, &points[i * n_dims], sizeof(double)*n_dims);
+    memcpy(&points[i * n_dims], &points[high * n_dims], sizeof(double)*n_dims);
+    memcpy(&points[high * n_dims], aux, sizeof(double)*n_dims);
    
     return i;
 }
