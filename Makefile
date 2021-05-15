@@ -12,10 +12,10 @@ SERIAL_OUT=${SERIAL}
 all: serial mpi 
 
 serial: ballAlg.c vectors.c common.c build_tree_rec.c
-	gcc -DSERIAL ${EXTRA} $^ -o ballAlg ${FLAGS} 
+	gcc -DSERIAL ${EXTRA} $^ -o ballAlg ${EXTRA} ${FLAGS} 
 
 mpi: ballAlg-mpi.c common.c vectors.c build_tree_rec.c
-	mpicc $^ -o ballAlg-mpi ${FLAGS}
+	mpicc $^ -o ballAlg-mpi ${EXTRA} ${FLAGS}
 
 profile: EXTRA= -pg
 profile: all
