@@ -6,15 +6,18 @@
 #include "median-mpi.h"
 #include "common.h"
 #include "gen_points.c"
+#include "sop.h"
 
 #define DELEGATE_MASTER 1
 #define OET_POINTS_1 2
 #define OET_POINTS_2 3
 #define OET_ORTHS_1 4
 #define OET_ORTHS_2 5
+#define EVEN_MEDIAN 6
 
 int solve_small(int n_procs, int global_rank, double exec_time, long n_points);
 
+void build_tree_BIGGUS(int n_points, sop_t* wset, long id, node_t* tree, double** centers, long write_idx);
 
 void reduce_max_distance(void *in, void *inout, int *len, MPI_Datatype *dptr);
 int solve_big(int n_procs, int global_rank, double exec_time, long n_points);
@@ -82,13 +85,13 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
     long _n_nodes = 2*_n_points - 1;
 
     long local_n_points = BLOCK_SIZE(rank, n_procs, _n_points);
-    long local_n_nodes = local_n_points + n_procs;
+    long local_n_nodes = 2*local_n_points + n_procs;
 
     SWAPPIE_SWAPPIE = (double*)malloc(sizeof(double) * N_DIMS * local_n_points);
     SWAPPIE_SWAPPIE_ORTH = (double*)malloc(sizeof(double) * local_n_points);
 
     // orthset: stores orthogonal projections
-    double* orthset = (double*)malloc(sizeof(double) * BLOCK_SIZE(rank, n_procs, _n_points));
+    double* orthset = (double*)malloc(sizeof(double) * local_n_points);
 
     global_aux = (double*)malloc(sizeof(double) * N_DIMS);
 
@@ -119,6 +122,7 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
 
     long id = 0;
     long level = 0;
+    long write_idx = 0;
     while(level < max_levels && n_procs > (1 << level)) {
 
         int comm_size;
@@ -172,9 +176,10 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
             orthset[i] = semi_orth_proj(N_DIMS, POINTS[i], a, b);
         }
 
+        MPI_Barrier(cur_comm);
+
         // Step 3: Sort global array
         // 3.1: Sort local array
-
         mpi_quicksort(POINTS[0], orthset, N_DIMS, local_n_points);
 
         // 3.2: OET
@@ -196,7 +201,7 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
             if(peer >= 0 && peer < comm_size) {
                 // 3.2.1: Send my data to my peer
                 //printf("BEFORE MALOC: [%d] phase %d\n", rank, phase);
-                long peer_block_size = BLOCK_SIZE(peer, n_procs, _n_points);
+                long peer_block_size = BLOCK_SIZE(peer, comm_size, _n_points);
 
                 double* peer_points = (double*)malloc(sizeof(double) * N_DIMS * peer_block_size);
                 double* peer_orth = (double*)malloc(sizeof(double) * peer_block_size);
@@ -204,30 +209,14 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                 
                 if(rank % 2 == 0) { // these nodes send first
                     // HACK: POINTS[0] points to the beginning of the point buffer
-                    /*if (rank == 2) {
-                        printf("Sending: \n");
-                        for(int i = 0; i < local_n_points*N_DIMS; i++) {
-                            printf("POINT: %f\n", POINTS[0][i]);
-                        }
-                        fflush(stdout);
-                    }*/
-                    
-                    //printf("BEFORE: [%d] phase %d peer %d buff %ld \n", rank, phase, peer, local_n_points * N_DIMS);
                     MPI_Send(POINTS[0], local_n_points * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_1, cur_comm);
-                    //printf("AFTER: [%d] phase %d\n", rank, phase);
-                    
-                    
                     MPI_Recv(peer_points, peer_block_size * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_2, cur_comm, NULL);
 
                     MPI_Send(orthset, local_n_points, MPI_DOUBLE, peer, OET_ORTHS_1, cur_comm);
                     MPI_Recv(peer_orth, peer_block_size, MPI_DOUBLE, peer, OET_ORTHS_2, cur_comm, NULL);
-                } else { // these nodes receive first
 
-                    //printf("BEFORE: [%d] phase %d peer %d buff %ld\n", rank, phase, peer, peer_block_size*N_DIMS);
+                } else { // these nodes receive first
                     MPI_Recv(peer_points, peer_block_size * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_1, cur_comm, NULL);
-                    //printf("AFTER: [%d] phase %d\n", rank, phase);
-                    
-                    
                     MPI_Send(POINTS[0], local_n_points * N_DIMS, MPI_DOUBLE, peer, OET_POINTS_2, cur_comm);
 
                     MPI_Recv(peer_orth, peer_block_size, MPI_DOUBLE, peer, OET_ORTHS_1, cur_comm, NULL);
@@ -256,12 +245,10 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                     long my_idx = local_n_points - 1, peer_idx = peer_block_size - 1;
                     for(long k = local_n_points - 1; k >= 0; k--) {
                         if(peer_orth[peer_idx] > orthset[my_idx] && peer_idx >= 0) {
-                            //vec_copy(N_DIMS, peer_points + (peer_idx * N_DIMS), POINTS[k]);
                             memcpy(POINTS[k], peer_points + (peer_idx * N_DIMS), sizeof(double) * N_DIMS);
                             SWAPPIE_SWAPPIE_ORTH[k] = peer_orth[peer_idx];
                             peer_idx--;
                         } else {
-                            //vec_copy(N_DIMS, SWAPPIE_SWAPPIE[my_idx * N_DIMS]), POINTS[k]);
                             memcpy(POINTS[k], SWAPPIE_SWAPPIE + (my_idx * N_DIMS), sizeof(double) * N_DIMS);
                             SWAPPIE_SWAPPIE_ORTH[k] = orthset[my_idx];
                             my_idx--;
@@ -270,7 +257,6 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
                 }
                 // do the swappie swappie
                 double* tmp = orthset;
-                //vec_copy(local_n_points, SWAPPIE_SWAPPIE_ORTH, orthset);
                 orthset = SWAPPIE_SWAPPIE_ORTH;
                 vec_copy(local_n_points, SWAPPIE_SWAPPIE_ORTH, tmp);
                 SWAPPIE_SWAPPIE_ORTH = tmp;
@@ -281,33 +267,146 @@ int solve_big(int n_procs, int global_rank, double exec_time, long _n_points) {
 
 
             MPI_Barrier(cur_comm);
-
-            // printf("I (%d) lived!\n", rank);
-            
         }
 
-
-        MPI_Barrier(cur_comm);
-
-
+        /*
         for(int p = 0; p < comm_size; p++) {
             if(p == rank) {
                 for(long i = 0; i < local_n_points; i++) {
-                    printf("[%d] %.6f\n", rank, orthset[i]);
+                    printf("[%d] %.6f | ", rank, orthset[i]);
+                    print_vec(POINTS[i], N_DIMS);
                 }
             }
             fflush(stdout);
             MPI_Barrier(cur_comm);
         }
-        break;
+        */
 
+        // Step 4: Calculate center
+        long mdnidx = (_n_points - 1) / 2;
+        int median_owner = 0;
+        if(_n_points % 2 == 1) {
+            median_owner = BLOCK_OWNER(mdnidx, comm_size, _n_points);
+            if(rank == median_owner) {
+                orth_proj(N_DIMS, POINTS[0], a, b, centers[write_idx]);
+            }
+        } else {
+            long lmid = mdnidx;
+            long umid = lmid + 1;
+            int lower_owner = BLOCK_OWNER(lmid, comm_size, _n_points);
+            int upper_owner = BLOCK_OWNER(umid, comm_size, _n_points);
+            median_owner = upper_owner;
+
+            assert(BLOCK_OWNER(umid, comm_size, _n_points) - BLOCK_OWNER(lmid, comm_size, _n_points) == 1);
+            assert(BLOCK_HIGH(lower_owner, comm_size, _n_points) == lmid);
+            assert(BLOCK_LOW(upper_owner, comm_size, _n_points) == umid);
+
+
+            if(rank == lower_owner) {
+                // Send lower point to the dude that has the upper point
+                MPI_Send(POINTS[local_n_points - 1], N_DIMS, MPI_DOUBLE, upper_owner, EVEN_MEDIAN, cur_comm);
+            }
+            if(rank == upper_owner) {
+                double lower_point[N_DIMS];
+                double lm_op[N_DIMS];
+                double um_op[N_DIMS];
+
+                MPI_Recv(lower_point, N_DIMS, MPI_DOUBLE, lower_owner, EVEN_MEDIAN, cur_comm, NULL);
+
+                orth_proj(N_DIMS, lower_point, a, b, lm_op);
+                orth_proj(N_DIMS, POINTS[0], a, b, um_op);
+                vec_sum(N_DIMS, lm_op, um_op, centers[write_idx]);
+                vec_scalar_mul(N_DIMS, centers[write_idx], 0.5, centers[write_idx]);
+            }
+        }
+
+        // Step 5: Calculate greatest radius
+        // Step 5.1: Broadcast center
+        double center[N_DIMS];
+        if(rank == median_owner) {
+            memcpy(center, centers[write_idx], sizeof(double) * N_DIMS);
+        }
+        MPI_Bcast(center, N_DIMS, MPI_DOUBLE, median_owner, cur_comm);
+
+        // Step 5.2: Calculate local radius
+        double global_rad;
+        double local_rad = 0;
+        for(long i = 0; i < local_n_points; i++) {
+            double new_rad = squared_dist(N_DIMS, center, POINTS[i]);
+            if(new_rad > local_rad) local_rad = new_rad;
+        }
+
+        // Step 5.3: Reduce to maximum
+        MPI_Reduce(&local_rad, &global_rad, 1, MPI_DOUBLE, MPI_MAX, median_owner, cur_comm);
+
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // Step 6: Store tree node in single node
+        long n_left = _n_points/2;
+        long n_right = _n_points - n_left;
+        if(rank == median_owner) {
+            node_t* node = tree + write_idx;
+            node->id = id;
+            node->center = centers[write_idx];
+            node->radius = global_rad;
+            node->left = id + 1;
+            node->right = id + 2*n_left;
+
+            write_idx++;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        // Step 7: Divide problem to conquer professor's heart
+        _n_points = (rank < median_owner ? n_left : n_right);
+        id = (rank < median_owner ? id + 1: id + 2*n_left);
+
+        // Split current comm in two
+        int color = rank / (comm_size/2);
+        MPI_Comm new_comm;
+        MPI_Comm_split(cur_comm, color, rank, &new_comm);
+        // MPI_Comm_free(&cur_comm);
+        cur_comm = new_comm;
+
+        // Update new rank
+        MPI_Comm_rank(cur_comm, &rank);
+
+        level++;
+    }
+    sop_t* wset = (sop_t*)malloc(sizeof(sop_t) * local_n_points);
+    for(long i = 0; i < local_n_points; i++) {
+        wset[i].point_idx = i;
     }
 
-    /*free(SWAPPIE_SWAPPIE);
+    build_tree_BIGGUS(local_n_points, wset, id, tree + write_idx, centers + write_idx, 0);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    exec_time += MPI_Wtime();
+
+    /*
+    free(SWAPPIE_SWAPPIE);
     free(SWAPPIE_SWAPPIE_ORTH);
     free(orthset);
-    free(global_aux);*/
+    free(global_aux);
+    */
+#ifndef SKIP_DUMP
+    for (long r = 0; r < n_procs; r++) {
+        if (global_rank == r) {
+            for (long i = 0; i < local_n_nodes; i++) {
+                if(tree[i].id != -1) {
+                    node_t* node = tree + i;
+                    printf("%d %ld %ld %.6f",
+                        node->id, node->left, node->right, sqrt(node->radius));
+                    print_vec(node->center, N_DIMS);
+                }
+            }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+#endif
 
+    if(global_rank == 0) {
+        fprintf(stderr, "%.1lf\n", exec_time);
+    }
 
     MPI_Finalize();
     return 0;
@@ -329,8 +428,6 @@ int solve_small(int n_procs, int global_rank, double exec_time, long n_points) {
 
 
     // allocate tree
-    // TODO: we may overflow malloc argument. Check that with teachers
-    // TODO: allocate in one big chunk
     long n_nodes = 2*n_points - 1;
     long id = 0;
     node_t* tree = (node_t*)malloc(sizeof(node_t) * n_nodes);
@@ -364,7 +461,6 @@ int solve_small(int n_procs, int global_rank, double exec_time, long n_points) {
         MPI_Comm_size(cur_comm, &comm_size);
 
         long ab[2];
-        // TODO: ???? if(free nodes available):
 
         if(rank == 0) {
             mpi_find_furthest_points(wset, n_points, ab, ab+1);
@@ -397,29 +493,10 @@ int solve_small(int n_procs, int global_rank, double exec_time, long n_points) {
             // rank*buf_size = the number of points attributed to the nodes
             // with a smaller rank
             buf_size = MIN(buf_size, n_points - rank*buf_size);
-            //printf("goodbye from %d with bufsize: %ld\n", global_rank, buf_size);
 
-            // if(id == 1) {
-            //     printf("%d is calculating orth projs of", global_rank);
-            //     for(long i = 0; i < buf_size; i++) {
-            //         printf(" %ld", local_wset[i]);
-            //     }
-            //     printf("\n");
-            // }
-
-            // printf("[%d] size: %ld\n", rank, buf_size);
             mpi_calc_orth_projs(local_wset, orthset, buf_size, a, b);
-
             // TODO: calc medians and send them to master?? NO >:(
 
-            /*
-            printf("[LEVEL %ld] [%d] got ", level, rank);
-            int i;
-            for(i = 0; i < buf_size - 1; i++) {
-                printf("%2ld, ", local_wset[i]);
-            }
-            printf("%2ld\n", local_wset[i]);
-            */
         } else {
             buf_size = 0;
         }
@@ -545,14 +622,6 @@ int solve_small(int n_procs, int global_rank, double exec_time, long n_points) {
 
         n_points = (rank < next_master ? n_left : n_right);
         id = (rank < next_master ? id + 1: id + 2*n_left);
-
-        // if(rank == 0 || rank == next_master) {
-        //     printf("[LEVEL %ld] %d will work on data: (", level + 1, rank);
-        //     for(int i = 0; i < n_points - 1; i++) {
-        //         printf("%ld, ", wset[i]);
-        //     }
-        //     printf("%ld)\n", wset[n_points - 1]);
-        // }
 
         // Split current comm in two
         int color = rank / (comm_size/2);
