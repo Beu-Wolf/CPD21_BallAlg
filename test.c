@@ -7,19 +7,19 @@
 
 
 int main() {
-    int n = 10;
-    int p = 4;
+    int n = 27;
+    int p = 8;
 
-    /*
     printf("n = %d, p = %d:\n", n, p);
     for(int i = 0; i < p; i++) {
         printf("[%d, %d] (%d)\n", BLOCK_LOW(i, p, n), BLOCK_HIGH(i, p, n), BLOCK_SIZE(i, p, n));
     }
-    */
 
+    /*
     for(int i = 0; i < 11; i++) {
         int peer = (i&(-1)) + 1 - 2*(i%2);
         printf("%d talks to %d\n", i, peer);
     }
+    */
 
 }
