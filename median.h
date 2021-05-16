@@ -123,12 +123,12 @@ int partition(item_t* vec, int len, double ref, int* different_vals) {
 
     while(i < j) {
         while(i < j && vec[++i].sop < ref) {
-            if (vec[i].sop != sop) *different_vals = 1;
+            if (vec[i].sop != sop && different_vals == 0) *different_vals = 1;
             if (i >= len) break;
             // printf("accessing i %d\n", i);
         }
         while(j > i && vec[--j].sop >= ref) {
-            if (vec[j].sop != sop) *different_vals = 1;
+            if (vec[j].sop != sop && different_vals == 0) *different_vals = 1;
             // printf("accessing j %d\n", j);
         }
         if(i >= j) break;
