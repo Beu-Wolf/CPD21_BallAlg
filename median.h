@@ -35,7 +35,7 @@ item_t select_ith(item_t* vec, int len, int ith) {
 
     int idx = 0;
 
-    int different_vals;
+    int different_vals = 0;
     while(idx == 0 || idx == len) { // wait to find a good partition
         item_t pivot = pick_pivot(vec, len);
 
