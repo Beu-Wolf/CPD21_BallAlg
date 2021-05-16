@@ -60,8 +60,8 @@ double **get_points(int argc, char *argv[], int world_rank, int world_size, int 
     seed = atoi(argv[3]);
     srandom(seed);
 
-    // *is_big = (*np) * (*n_dims) > _1GB;
-    *is_big = 1;
+    *is_big = (*np) * (*n_dims) > _1GB;
+    //*is_big = 1;
 
     if(*is_big) {
         // Big version: processes have different points
