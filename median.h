@@ -14,6 +14,9 @@ item_t median(item_t* vec, int len);
 item_t select_ith(item_t* vec, int len, int i);
 int partition(item_t* vec, int len, double ref);
 
+
+#define RANDOM(len) (random() % len)
+
 // void print_vec(item_t* vec, int len);
 
 // returns ith smallest element of vec

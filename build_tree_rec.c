@@ -2,8 +2,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include <mpi.h>
-
 #include "common.h"
 #include "vectors.h"
 #include "median.h"
