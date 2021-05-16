@@ -58,10 +58,10 @@ item_t select_ith(item_t* vec, int len, int ith) {
 
 item_t pick_pivot(item_t* vec, int len) {
     // randomized
-    // return vec[(int)(RANDOM(len))];
+    return vec[(int)(RANDOM(len))];
 
     // pick median of medians
-    if(len < 5) return nlogn_median(vec, len);
+    /*if(len < 5) return nlogn_median(vec, len);
 
     int n_sub_arrays = len/5;
     item_t* medians = (item_t *) malloc(n_sub_arrays*sizeof(item_t));
@@ -73,7 +73,7 @@ item_t pick_pivot(item_t* vec, int len) {
 
     item_t t = select_ith(medians, n_sub_arrays, n_sub_arrays/2);
     free(medians);
-    return t;
+    return t;*/
 }
 
 int cmp_item(const void* _a, const void* _b) {
