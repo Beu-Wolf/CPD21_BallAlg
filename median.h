@@ -42,6 +42,7 @@ item_t select_ith(item_t* vec, int len, int ith) {
         // printf("random idx: %d (%f)\n", r, vec[r]);
         idx = partition(vec, len, pivot.sop, &different_vals);
         // print_vec(vec, len);
+        if (!different_vals) break; // If we see all sops are the same, we can just return the first
         if((idx == 0 || idx == len) && different_vals) continue;
 
         // printf("partitioned at %d\n", idx);
