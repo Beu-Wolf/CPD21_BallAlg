@@ -34,11 +34,12 @@ item_t select_ith(item_t* vec, int len, int ith) {
     }
 
     int idx = 0;
+
+    int different_vals;
     while(idx == 0 || idx == len) { // wait to find a good partition
         item_t pivot = pick_pivot(vec, len);
 
         // printf("random idx: %d (%f)\n", r, vec[r]);
-        int different_vals;
         idx = partition(vec, len, pivot.sop, &different_vals);
         // print_vec(vec, len);
         if((idx == 0 || idx == len) && different_vals) continue;
@@ -54,6 +55,8 @@ item_t select_ith(item_t* vec, int len, int ith) {
     if(ith < idx) {
         // printf("Searching in left\n");
         return select_ith(vec, idx, ith);
+    } else if (!different_vals){
+        return vec[0];
     } else {
         // printf("Searching in right\n");
         return select_ith(vec+idx, len-idx, ith-idx);
