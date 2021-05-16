@@ -12,7 +12,7 @@ item_t nlogn_median(item_t* vec, int len);
 int cmp_item(const void* _a, const void* _b);
 item_t median(item_t* vec, int len);
 item_t select_ith(item_t* vec, int len, int i);
-int partition(item_t* vec, int len, double ref);
+int partition(item_t* vec, int len, double ref, int* different_vals);
 
 
 #define RANDOM(len) (random() % len)
@@ -38,9 +38,10 @@ item_t select_ith(item_t* vec, int len, int ith) {
         item_t pivot = pick_pivot(vec, len);
 
         // printf("random idx: %d (%f)\n", r, vec[r]);
-        idx = partition(vec, len, pivot.sop);
+        int different_vals;
+        idx = partition(vec, len, pivot.sop, &different_vals);
         // print_vec(vec, len);
-        if(idx == 0 || idx == len) continue;
+        if((idx == 0 || idx == len) && different_vals) continue;
 
         // printf("partitioned at %d\n", idx);
 
@@ -110,16 +111,20 @@ item_t nlogn_median(item_t* vec, int len) {
 }
 
 // returns first index of second partition
-int partition(item_t* vec, int len, double ref) {
+int partition(item_t* vec, int len, double ref, int* different_vals) {
     int i = -1;
     int j = len;
 
+    double sop = vec[0].sop;
+
     while(i < j) {
         while(i < j && vec[++i].sop < ref) {
+            if (vec[i].sop != sop) *different_vals = 1;
             if (i >= len) break;
             // printf("accessing i %d\n", i);
         }
         while(j > i && vec[--j].sop >= ref) {
+            if (vec[j].sop != sop) *different_vals = 1;
             // printf("accessing j %d\n", j);
         }
         if(i >= j) break;

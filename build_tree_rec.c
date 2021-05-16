@@ -86,7 +86,9 @@ void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** c
         }
     }
 
-    partition(wset, n_points, mdn_sop);
+    int trash;
+
+    partition(wset, n_points, mdn_sop, &trash);
 
 
     double sq_radius = 0.0;
@@ -184,8 +186,8 @@ void build_tree_aux_BIGGUS(int n_points, sop_t* wset, long id, node_t* tree, dou
         }
     }
 
-
-    partition(wset, n_points, mdn_sop);
+    int trash;
+    partition(wset, n_points, mdn_sop, &trash);
 
 
     double sq_radius = 0.0;
