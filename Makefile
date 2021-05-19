@@ -15,7 +15,7 @@ serial: ballAlg.c vectors.c common.c build_tree_rec.c
 	gcc -DSERIAL ${EXTRA} $^ -o ballAlg ${EXTRA} ${FLAGS} 
 
 mpi: ballAlg-mpi.c common.c vectors.c build_tree_rec.c
-	mpicc $^ -o ballAlg-mpi ${EXTRA} ${FLAGS}
+	mpicc $^ -o ballAlg-mpi ${EXTRA} ${FLAGS} ${PAR}
 
 profile: EXTRA= -pg
 profile: all

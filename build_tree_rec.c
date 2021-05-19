@@ -113,11 +113,11 @@ void build_tree_aux(int n_points, sop_t* wset, long id, node_t* tree, double** c
 
     
     // left partition
-    #pragma omp task untied if (n_points >= 8)
+    #pragma omp task untied if (n_points >= 128)
     build_tree_aux(n_left, wset, node->left, tree, centers);
 
     // right partition
-    #pragma omp task untied if (n_points >= 8)
+    #pragma omp task untied if (n_points >= 128)
     build_tree_aux(n_right, wset + n_left, node->right, tree, centers);
 }
 
@@ -214,11 +214,11 @@ void build_tree_aux_BIGGUS(int n_points, sop_t* wset, long id, node_t* tree, dou
     long right_widx = write_idx + 2*n_left;
     
     // left partition
-    #pragma omp task untied if (n_points >= 8)
+    #pragma omp task untied if (n_points >= 128)
     build_tree_aux_BIGGUS(n_left, wset, node->left, tree, centers, left_widx);
 
     // right partition
-    #pragma omp task untied if (n_points >= 8)
+    #pragma omp task untied if (n_points >= 128)
     build_tree_aux_BIGGUS(n_right, wset + n_left, node->right, tree, centers, right_widx);
 }
 
