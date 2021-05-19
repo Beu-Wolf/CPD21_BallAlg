@@ -120,6 +120,7 @@ int partition(item_t* vec, int len, double ref, int* different_vals) {
     int j = len;
 
     double sop = vec[0].sop;
+    if (sop != ref) *different_vals = 1;
 
     while(i < j) {
         while(i < j && vec[++i].sop < ref) {
@@ -131,6 +132,7 @@ int partition(item_t* vec, int len, double ref, int* different_vals) {
             if (vec[j].sop != sop && different_vals == 0) *different_vals = 1;
             // printf("accessing j %d\n", j);
         }
+        if (vec[i].sop != sop || vec[j].sop != sop || vec[i].sop != vec[j].sop) *different_vals = 1;
         if(i >= j) break;
         // printf("swap %d %d\n", i, j);
         // does this copy the entire structure?
